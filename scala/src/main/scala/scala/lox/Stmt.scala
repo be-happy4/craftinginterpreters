@@ -30,7 +30,7 @@ object Stmt:
     def visitVarStmt(stmt: Stmt.Var): R
     def visitWhileStmt(stmt: Stmt.While): R
 
-  // Nested Stmt classes here...
+// Nested Stmt classes here...
 //> stmt-block
   class Block(val statements: List[Stmt]) extends Stmt
 //< stmt-block

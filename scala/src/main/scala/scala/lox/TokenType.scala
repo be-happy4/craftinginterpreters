@@ -1,6 +1,10 @@
 package com.craftinginterpreters
 package scala.lox
 
+/**
+ * @see [[com.sun.tools.javac.parser.Tokens.TokenKind]]
+ * @see [[com.sun.tools.javac.parser.Tokens.Token.Tag]]
+ */
 enum TokenType:
   // Single-character tokens.
   case LEFT_PAREN

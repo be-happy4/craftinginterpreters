@@ -36,7 +36,7 @@ object Expr:
     def visitUnaryExpr(expr: Expr.Unary): R
     def visitVariableExpr(expr: Expr.Variable): R
 
-  // Nested Expr classes here...
+// Nested Expr classes here...
 //> expr-assign
   class Assign(val name: Token, val value: Expr) extends Expr
 //< expr-assign
