@@ -9,12 +9,22 @@ import scala.lox.TokenType.*
 
 import _root_.scala.collection.immutable.List
 import _root_.scala.collection.mutable.ListBuffer
+import java.nio.file.Files
+import java.nio.file.Path
 
 
-object Parser {
+object Parser:
   //> parse-error
   private class ParseError extends RuntimeException {}
-}
+
+  def main(args: Array[String]): Unit =
+    val path = Path.of("test/if/if.lox")
+    val source = String(java.nio.file.Files.readAllBytes(path))
+    val statements = Parser(Scanner(source).scanTokens).parse
+    val printer = AstPrinter()
+    statements.map(printer.print).foreach(println)
+    
+
 
 class Parser private[lox]( //< parse-error
   private val tokens: List[Token]) {
@@ -30,7 +40,7 @@ class Parser private[lox]( //< parse-error
     }
   */
   //> Statements and State parse
-  private[lox] def parse: ListBuffer[Stmt] = {
+  private[lox] def parse: List[Stmt] = {
     val statements = new ListBuffer[Stmt]
     while (!isAtEnd) {
       /* Statements and State parse < Statements and State parse-declaration
@@ -39,7 +49,7 @@ class Parser private[lox]( //< parse-error
       //> parse-declaration
       statements += declaration
     }
-    statements // [parse-error-handling]
+    statements.toList // [parse-error-handling]
 
   }
 
@@ -58,12 +68,12 @@ class Parser private[lox]( //< parse-error
   //> Statements and State declaration
   private def declaration: Stmt = try {
     //> Classes match-class
-    if (matching(CLASS)) return classDeclaration
+    if (matches(CLASS)) return classDeclaration
     //< Classes match-class
     //> Functions match-fun
-    if (matching(FUN)) return function("function")
+    if (matches(FUN)) return function("function")
     //< Functions match-fun
-    if (matching(VAR)) return varDeclaration
+    if (matches(VAR)) return varDeclaration
     statement
   } catch {
     case error: Parser.ParseError =>
@@ -77,7 +87,7 @@ class Parser private[lox]( //< parse-error
     val name = consume(IDENTIFIER, "Expect class name.")
     //> Inheritance parse-superclass
     var superclass: Expr.Variable = null
-    if (matching(LESS)) {
+    if (matches(LESS)) {
       consume(IDENTIFIER, "Expect superclass name.")
       superclass = new Expr.Variable(previous)
     }
@@ -98,20 +108,20 @@ class Parser private[lox]( //< parse-error
   //> Statements and State parse-statement
   private def statement: Stmt = {
     //> Control Flow match-for
-    if (matching(FOR)) return forStatement
+    if (matches(FOR)) return forStatement
     //< Control Flow match-for
     //> Control Flow match-if
-    if (matching(IF)) return ifStatement
+    if (matches(IF)) return ifStatement
     //< Control Flow match-if
-    if (matching(PRINT)) return printStatement
+    if (matches(PRINT)) return printStatement
     //> Functions match-return
-    if (matching(RETURN)) return returnStatement
+    if (matches(RETURN)) return returnStatement
     //< Functions match-return
     //> Control Flow match-while
-    if (matching(WHILE)) return whileStatement
+    if (matches(WHILE)) return whileStatement
     //< Control Flow match-while
     //> parse-block
-    if (matching(LEFT_BRACE)) return new Stmt.Block(block)
+    if (matches(LEFT_BRACE)) return new Stmt.Block(block)
     //< parse-block
     expressionStatement
   }
@@ -125,8 +135,8 @@ class Parser private[lox]( //< parse-error
     */
     //> for-initializer
     var initializer: Stmt = null
-    if (matching(SEMICOLON)) initializer = null
-    else if (matching(VAR)) initializer = varDeclaration
+    if (matches(SEMICOLON)) initializer = null
+    else if (matches(VAR)) initializer = varDeclaration
     else initializer = expressionStatement
     //< for-initializer
     //> for-condition
@@ -164,7 +174,7 @@ class Parser private[lox]( //< parse-error
 
     val thenBranch = statement
     var elseBranch: Stmt = null
-    if (matching(ELSE)) elseBranch = statement
+    if (matches(ELSE)) elseBranch = statement
     new Stmt.If(condition, thenBranch, elseBranch)
   }
 
@@ -191,7 +201,7 @@ class Parser private[lox]( //< parse-error
   private def varDeclaration: Stmt.Var = {
     val name = consume(IDENTIFIER, "Expect variable name.")
     var initializer: Expr = null
-    if (matching(EQUAL)) initializer = expression
+    if (matches(EQUAL)) initializer = expression
     consume(SEMICOLON, "Expect ';' after variable declaration.")
     new Stmt.Var(name, initializer)
   }
@@ -225,7 +235,7 @@ class Parser private[lox]( //< parse-error
       while
         if (parameters.size >= 255) error(peek, "Can't have more than 255 parameters.")
         parameters += consume(IDENTIFIER, "Expect parameter name.")
-        matching(COMMA)
+        matches(COMMA)
       do ()
     consume(RIGHT_PAREN, "Expect ')' after parameters.")
     //< parse-parameters
@@ -254,7 +264,7 @@ class Parser private[lox]( //< parse-error
     //> Control Flow or-in-assignment
     val expr = or
     //< Control Flow or-in-assignment
-    if (matching(EQUAL)) {
+    if (matches(EQUAL)) {
       val equals = previous
       val value = assignment
       if (expr.isInstanceOf[Expr.Variable]) {
@@ -275,7 +285,7 @@ class Parser private[lox]( //< parse-error
   //> Control Flow or
   private def or: Expr = {
     var expr = and
-    while (matching(OR)) {
+    while (matches(OR)) {
       val operator = previous
       val right = and
       expr = new Expr.Logical(expr, operator, right)
@@ -287,7 +297,7 @@ class Parser private[lox]( //< parse-error
   //> Control Flow and
   private def and: Expr = {
     var expr = equality
-    while (matching(AND)) {
+    while (matches(AND)) {
       val operator = previous
       val right = equality
       expr = new Expr.Logical(expr, operator, right)
@@ -299,7 +309,7 @@ class Parser private[lox]( //< parse-error
   //> equality
   private def equality: Expr = {
     var expr = comparison
-    while (matching(BANG_EQUAL, EQUAL_EQUAL)) {
+    while (matches(BANG_EQUAL, EQUAL_EQUAL)) {
       val operator = previous
       val right = comparison
       expr = new Expr.Binary(expr, operator, right)
@@ -311,7 +321,7 @@ class Parser private[lox]( //< parse-error
   //> comparison
   private def comparison: Expr = {
     var expr = term
-    while (matching(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+    while (matches(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
       val operator = previous
       val right = term
       expr = new Expr.Binary(expr, operator, right)
@@ -323,7 +333,7 @@ class Parser private[lox]( //< parse-error
   //> term
   private def term: Expr = {
     var expr = factor
-    while (matching(MINUS, PLUS)) {
+    while (matches(MINUS, PLUS)) {
       val operator = previous
       val right = factor
       expr = new Expr.Binary(expr, operator, right)
@@ -335,7 +345,7 @@ class Parser private[lox]( //< parse-error
   //> factor
   private def factor: Expr = {
     var expr = unary
-    while (matching(SLASH, STAR)) {
+    while (matches(SLASH, STAR)) {
       val operator = previous
       val right = unary
       expr = new Expr.Binary(expr, operator, right)
@@ -346,7 +356,7 @@ class Parser private[lox]( //< parse-error
   //< factor
   //> unary
   private def unary: Expr = {
-    if (matching(BANG, MINUS)) {
+    if (matches(BANG, MINUS)) {
       val operator = previous
       val right = unary
       return new Expr.Unary(operator, right)
@@ -369,7 +379,7 @@ class Parser private[lox]( //< parse-error
         if (arguments.size >= 255) error(peek, "Can't have more than 255 arguments.")
         //< check-max-arity
         arguments += expression
-        matching(COMMA)
+        matches(COMMA)
       do ()
     val paren = consume(RIGHT_PAREN, "Expect ')' after arguments.")
     new Expr.Call(callee, paren, arguments.toList)
@@ -381,8 +391,8 @@ class Parser private[lox]( //< parse-error
     var expr = primary
     var flag = true
     while flag do // [while-true]
-      if (matching(LEFT_PAREN)) expr = finishCall(expr)
-      else if (matching(DOT)) {
+      if (matches(LEFT_PAREN)) expr = finishCall(expr)
+      else if (matches(DOT)) {
         val name = consume(IDENTIFIER, "Expect property name after '.'.")
         expr = new Expr.Get(expr, name)
       }
@@ -393,12 +403,12 @@ class Parser private[lox]( //< parse-error
   //< Functions call
   //> primary
   private def primary: Expr = {
-    if (matching(FALSE)) return new Expr.Literal(false)
-    if (matching(TRUE)) return new Expr.Literal(true)
-    if (matching(NIL)) return new Expr.Literal(null)
-    if (matching(NUMBER, STRING)) return new Expr.Literal(previous.literal)
+    if (matches(FALSE)) return new Expr.Literal(false)
+    if (matches(TRUE)) return new Expr.Literal(true)
+    if (matches(NIL)) return new Expr.Literal(null)
+    if (matches(NUMBER, STRING)) return new Expr.Literal(previous.literal)
     //> Inheritance parse-super
-    if (matching(SUPER)) {
+    if (matches(SUPER)) {
       val keyword = previous
       consume(DOT, "Expect '.' after 'super'.")
       val method = consume(IDENTIFIER, "Expect superclass method name.")
@@ -406,12 +416,12 @@ class Parser private[lox]( //< parse-error
     }
     //< Inheritance parse-super
     //> Classes parse-this
-    if (matching(THIS)) return new Expr.This(previous)
+    if (matches(THIS)) return new Expr.This(previous)
     //< Classes parse-this
     //> Statements and State parse-identifier
-    if (matching(IDENTIFIER)) return new Expr.Variable(previous)
+    if (matches(IDENTIFIER)) return new Expr.Variable(previous)
     //< Statements and State parse-identifier
-    if (matching(LEFT_PAREN)) {
+    if (matches(LEFT_PAREN)) {
       val expr = expression
       consume(RIGHT_PAREN, "Expect ')' after expression.")
       return new Expr.Grouping(expr)
@@ -423,7 +433,7 @@ class Parser private[lox]( //< parse-error
 
   //< primary
   //> match
-  private def matching(types: TokenType*): Boolean = {
+  private def matches(types: TokenType*): Boolean = {
     var flag = true
     for (typ <- types if flag) {
       if (check(typ)) {

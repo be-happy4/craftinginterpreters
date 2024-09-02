@@ -160,7 +160,7 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
   private def parenthesize2(name: String, parts: AnyRef*) = {
     val builder = new StringBuilder
     builder.append("(").append(name)
-    transform(builder, parts)
+    transform(builder, parts*)
     builder.append(")")
     builder.toString
   }
