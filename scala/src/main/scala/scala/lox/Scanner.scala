@@ -5,35 +5,45 @@ package scala.lox
 
 import scala.lox.TokenType.*
 
-import java.util
-import java.util.{ArrayList, HashMap, Map}
+import java.nio.file.Path
+import _root_.scala.collection.immutable.{List, Map}
 import _root_.scala.collection.mutable.ListBuffer
-import _root_.scala.collection.immutable.List
 
 
 object Scanner:
   //> keyword-map
-  private val keywords: util.Map[String, TokenType] = new util.HashMap[String, TokenType]
-  keywords.put("and", AND)
-  keywords.put("class", CLASS)
-  keywords.put("else", ELSE)
-  keywords.put("false", FALSE)
-  keywords.put("for", FOR)
-  keywords.put("fun", FUN)
-  keywords.put("if", IF)
-  keywords.put("nil", NIL)
-  keywords.put("or", OR)
-  keywords.put("print", PRINT)
-  keywords.put("return", RETURN)
-  keywords.put("super", SUPER)
-  keywords.put("this", THIS)
-  keywords.put("true", TRUE)
-  keywords.put("var", VAR)
-  keywords.put("while", WHILE)
+  private val keywords: Map[String, TokenType] = Map.apply(
+    "and" -> AND,
+    "class" -> CLASS,
+    "else" -> ELSE,
+    "false" -> FALSE,
+    "for" -> FOR,
+    "fun" -> FUN,
+    "if" -> IF,
+    "nil" -> NIL,
+    "or" -> OR,
+    "print" -> PRINT,
+    "return" -> RETURN,
+    "super" -> SUPER,
+    "this" -> THIS,
+    "true" -> TRUE,
+    "var" -> VAR,
+    "while" -> WHILE,
+  )
+
+  def apply(source: String): Scanner =
+    new Scanner(source)
+
+  def apply(path: Path): Scanner =
+    new Scanner(String(java.nio.file.Files.readAllBytes(path)))
+
+  def main(args: Array[String]): Unit =
+    val scanner = Scanner(Path.of("test/comments/slash_star.lox"))
+    val tokens = scanner.scanTokens
+    println(tokens)
 
 
-class Scanner private[lox](private val source: String) //< scan-state
-{
+class Scanner(private val source: String): //< scan-state
   final private val tokens = new ListBuffer[Token]
   //> scan-state
   private var start = 0
@@ -70,13 +80,13 @@ class Scanner private[lox](private val source: String) //< scan-state
 
       //> two-char-tokens
       case '!' => addToken(if (matches('=')) BANG_EQUAL
-        else BANG)
+      else BANG)
       case '=' => addToken(if (matches('=')) EQUAL_EQUAL
-        else EQUAL)
+      else EQUAL)
       case '<' => addToken(if (matches('=')) LESS_EQUAL
-        else LESS)
+      else LESS)
       case '>' => addToken(if (matches('=')) GREATER_EQUAL
-        else GREATER)
+      else GREATER)
 
       //< two-char-tokens
       //> slash
@@ -84,8 +94,19 @@ class Scanner private[lox](private val source: String) //< scan-state
         if (matches('/')) {
           // A comment goes until the end of the line.
           while (peek != '\n' && !isAtEnd) advance
-        }
-        else addToken(SLASH)
+        } else if (matches('*')) {
+          var nc = peek
+          var flag = true
+          while (!isAtEnd && flag) {
+            nc match
+              case '*' => if (matches('/')) {
+                flag = false
+              }
+              case '\n' => line += 1
+              case _ =>
+            nc = advance
+          }
+        } else addToken(SLASH)
 
       //< slash
       //> whitespace
@@ -126,7 +147,7 @@ class Scanner private[lox](private val source: String) //< scan-state
     */
     //> keyword-type
     val text = source.substring(start, current)
-    var typ = Scanner.keywords.get(text)
+    var typ = Scanner.keywords.getOrElse(text, null)
     if (typ == null) typ = IDENTIFIER
     addToken(typ)
     //< keyword-type
@@ -167,7 +188,7 @@ class Scanner private[lox](private val source: String) //< scan-state
   //> match
   private def matches(expected: Char): Boolean = {
     if (isAtEnd) return false
-    if (source.charAt(current) != expected) return false
+    if (source(current) != expected) return false
     current += 1
     true
   }
@@ -176,14 +197,14 @@ class Scanner private[lox](private val source: String) //< scan-state
   //> peek
   private def peek: Char = {
     if (isAtEnd) return '\u0000'
-    source.charAt(current)
+    source(current)
   }
 
   //< peek
   //> peek-next
   private def peekNext: Char = {
     if (current + 1 >= source.length) return '\u0000'
-    source.charAt(current + 1)
+    source(current + 1)
   } // [peek-next]
 
   //< peek-next
@@ -202,7 +223,7 @@ class Scanner private[lox](private val source: String) //< scan-state
 
   //< is-at-end
   //> advance-and-add-token
-  private def advance = source.charAt({
+  private def advance = source({
     current += 1;
     current - 1
   })
@@ -215,6 +236,6 @@ class Scanner private[lox](private val source: String) //< scan-state
     val text = source.substring(start, current)
     tokens += new Token(typ, text, literal, line)
   }
-  //< advance-and-add-token
-}
+//< advance-and-add-token
+
 

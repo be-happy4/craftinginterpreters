@@ -25,7 +25,6 @@ object Parser:
     statements.map(printer.print).foreach(println)
     
 
-
 class Parser private[lox]( //< parse-error
   private val tokens: List[Token]) {
   private var current = 0
