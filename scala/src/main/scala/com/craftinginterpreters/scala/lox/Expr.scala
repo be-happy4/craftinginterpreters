@@ -19,6 +19,8 @@ sealed abstract class Expr:
       case x: Expr.This => visitor.visitThisExpr(x)
       case x: Expr.Unary => visitor.visitUnaryExpr(x)
       case x: Expr.Variable => visitor.visitVariableExpr(x)
+      case x: Expr.Comma => visitor.visitCommaExpr(x)
+      case x: Expr.Ternary => visitor.visitTernaryExpr(x)
 
 object Expr:
   trait Visitor[R]:
@@ -34,6 +36,8 @@ object Expr:
     def visitThisExpr(expr: Expr.This): R
     def visitUnaryExpr(expr: Expr.Unary): R
     def visitVariableExpr(expr: Expr.Variable): R
+    def visitCommaExpr(expr: Expr.Comma): R
+    def visitTernaryExpr(expr: Expr.Ternary): R
 
 // Nested Expr classes here...
 //> expr-assign
@@ -84,5 +88,14 @@ object Expr:
 //> expr-variable
   class Variable(val name: Token) extends Expr
 //< expr-variable
+//> expr-comma
+  class Comma(val expressions: List[Expr]) extends Expr
+//< expr-comma
+//> expr-ternary
+  class Ternary(
+    val condition: Expr,
+    val positiveExpression: Expr,
+    val negativeExpression: Expr) extends Expr
+//< expr-ternary
 
 //< Appendix II expr

@@ -32,13 +32,7 @@ object GenerateAst {
   case class ParamDef(name: String, typeName: String)
   case class ClassDef(name: String, params: List[ParamDef])
 
-  @throws[IOException]
-  def main(args: Array[String]): Unit = {
-    if (args.length != 1) {
-      System.err.println("Usage: generate_ast <output directory>")
-      System.exit(64)
-    }
-    val outputDir = args(0)
+  def gen(outputDir: String): Unit =
     if Files.notExists(Path.of(outputDir)) then Files.createDirectories(Path.of(outputDir))
     //> call-define-ast
     defineAst(outputDir, "Expr", List( //> Statements and State assign-expr
@@ -47,7 +41,8 @@ object GenerateAst {
       "Call     : Expr callee, Token paren, List<Expr> arguments", //< Functions call-expr
       //> Classes get-ast
       "Get      : Expr object, Token name", //< Classes get-ast
-      "Grouping : Expr expression", "Literal  : Object value", //> Control Flow logical-ast
+      "Grouping : Expr expression",
+      "Literal  : Object value", //> Control Flow logical-ast
       "Logical  : Expr left, Token operator, Expr right", //< Control Flow logical-ast
       //> Classes set-ast
       "Set      : Expr object, Token name, Expr value", //< Classes set-ast
@@ -59,7 +54,12 @@ object GenerateAst {
             "Unary    : Token operator, Expr right"
       */
       //> Statements and State var-expr
-      "Unary    : Token operator, Expr right", "Variable : Token name"))
+      "Unary    : Token operator, Expr right",
+      "Variable : Token name",
+      //> Statements and State var-expr
+      "Comma    : List<Expr> expressions",
+      "Ternary  : Expr condition, Expr positiveExpression, Expr negativeExpression",
+    ))
     //> Statements and State stmt-ast
     defineAst(outputDir, "Stmt", List( //> block-ast
       "Block      : List<Stmt> statements", //< block-ast
@@ -67,11 +67,11 @@ object GenerateAst {
             "Class      : Token name, List<Stmt.Function> methods",
       */
       //> Inheritance superclass-ast
-      "Class      : Token name, Expr.Variable superclass," + " List<Stmt.Function> methods", //< Inheritance superclass-ast
+      "Class      : Token name, Expr.Variable superclass, List<Stmt.Function> methods", //< Inheritance superclass-ast
       "Expression : Expr expression", //> Functions function-ast
-      "Function   : Token name, List<Token> params," + " List<Stmt> body", //< Functions function-ast
+      "Function   : Token name, List<Token> params, List<Stmt> body", //< Functions function-ast
       //> Control Flow if-ast
-      "If         : Expr condition, Stmt thenBranch," + " Stmt elseBranch", //< Control Flow if-ast
+      "If         : Expr condition, Stmt thenBranch, Stmt elseBranch", //< Control Flow if-ast
       /* Statements and State stmt-ast < Statements and State var-stmt-ast
             "Print      : Expr expression"
       */
@@ -83,9 +83,21 @@ object GenerateAst {
             "Var        : Token name, Expr initializer"
       */
       //> Control Flow while-ast
-      "Var        : Token name, Expr initializer", "While      : Expr condition, Stmt body"))
-    //< Statements and State stmt-ast
-    //< call-define-ast
+      "Var        : Token name, Expr initializer",
+      "While      : Expr condition, Stmt body"
+    ))
+  //< Statements and State stmt-ast
+  //< call-define-ast
+
+  @throws[IOException]
+  def main(args: Array[String]): Unit = {
+//    if (args.length != 1) {
+//      System.err.println("Usage: generate_ast <output directory>")
+//      System.exit(64)
+//    }
+//    val outputDir = args(0)
+    val outputDir = "scala/src/main/scala/com/craftinginterpreters/scala/lox"
+    gen(outputDir)
   }
 
   //> define-ast

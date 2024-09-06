@@ -11,10 +11,10 @@ class AstPrinter implements Expr.Visitor<String> {
 //> Statements and State omit
 class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
   //< Statements and State omit
-  private[lox] def print(expr: Expr) = expr.accept(this)
+  def print(expr: Expr) = expr.accept(this)
 
   //> Statements and State omit
-  private[lox] def print(stmt: Stmt) = stmt.accept(this)
+  def print(stmt: Stmt) = stmt.accept(this)
 
   //< Statements and State omit
   //> visit-methods
@@ -136,6 +136,12 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
 
   //> Statements and State omit
   override def visitVariableExpr(expr: Expr.Variable): String = expr.name.lexeme
+
+  override def visitCommaExpr(expr: Expr.Comma): String =
+    expr.expressions.map(_.accept(this)).mkString("(", ", ", ")")
+
+  override def visitTernaryExpr(expr: Expr.Ternary): String =
+    s"(${expr.condition} ? ${expr.positiveExpression} : ${expr.negativeExpression})"
 
   //< Statements and State omit
   //< visit-methods

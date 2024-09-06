@@ -264,15 +264,13 @@ class Parser( //< parse-error
     if (matches(EQUAL)) {
       val equals = previous
       val value = assignment
-      if (expr.isInstanceOf[Expr.Variable]) {
-        val name = expr.asInstanceOf[Expr.Variable].name
-        return new Expr.Assign(name, value)
-      }
-      else if (expr.isInstanceOf[Expr.Get]) {
-        val get = expr.asInstanceOf[Expr.Get]
-        return new Expr.Set(get.obj, get.name, value)
-      }
-      error(equals, "Invalid assignment target.") // [no-throw]
+      expr match
+        case variable: Expr.Variable =>
+          return new Expr.Assign(variable.name, value)
+        case get: Expr.Get =>
+          return new Expr.Set(get.obj, get.name, value)
+        case _ =>
+          error(equals, "Invalid assignment target.") // [no-throw]
 
     }
     expr
