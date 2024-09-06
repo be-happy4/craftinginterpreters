@@ -1,12 +1,10 @@
 
 //> Representing Code generate-ast
-package com.craftinginterpreters
-package scala.tool
-
+package com.craftinginterpreters.scala.tool
 
 import java.io.{IOException, PrintWriter}
 import java.nio.file.{Files, Path}
-import _root_.scala.collection.immutable.List
+import scala.collection.immutable.List
 
 
 object GenerateAst {
@@ -100,10 +98,9 @@ object GenerateAst {
     //< omit
     writer.println(
       s"""
-         |package com.craftinginterpreters
-         |package scala.lox
+         |package com.craftinginterpreters.scala.lox
          |
-         |import _root_.scala.collection.immutable.List
+         |import scala.collection.immutable.List
          |
          |sealed abstract class $baseName:
          |  def accept[R](visitor: $baseName.Visitor[R]): R =

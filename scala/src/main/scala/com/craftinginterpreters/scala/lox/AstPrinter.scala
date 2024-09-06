@@ -1,5 +1,4 @@
-package com.craftinginterpreters
-package scala.lox
+package com.craftinginterpreters.scala.lox
 
 //> Representing Code ast-printer
 //> omit//> omit

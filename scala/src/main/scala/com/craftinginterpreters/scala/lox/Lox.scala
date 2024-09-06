@@ -1,8 +1,6 @@
 
 //> Scanning lox-class
-package com.craftinginterpreters
-package scala.lox
-
+package com.craftinginterpreters.scala.lox
 
 import java.io.BufferedReader
 import java.io.IOException

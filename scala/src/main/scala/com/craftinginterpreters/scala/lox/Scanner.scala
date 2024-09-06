@@ -1,13 +1,12 @@
 
 //> Scanning scanner-class
-package com.craftinginterpreters
-package scala.lox
+package com.craftinginterpreters.scala.lox
 
-import scala.lox.TokenType.*
+import TokenType.*
 
 import java.nio.file.Path
-import _root_.scala.collection.immutable.{List, Map}
-import _root_.scala.collection.mutable.ListBuffer
+import scala.collection.immutable.{List, Map}
+import scala.collection.mutable.ListBuffer
 
 
 object Scanner:
@@ -38,7 +37,7 @@ object Scanner:
     new Scanner(String(java.nio.file.Files.readAllBytes(path)))
 
   def main(args: Array[String]): Unit =
-    val scanner = Scanner(Path.of("test/comments/slash_star.lox"))
+    val scanner = Scanner(Path.of("./test/comments/block_comment.lox"))
     val tokens = scanner.scanTokens
     println(tokens)
 
@@ -51,7 +50,7 @@ class Scanner(private val source: String): //< scan-state
   private var line = 1
 
   //> scan-tokens
-  private[lox] def scanTokens: List[Token] = {
+  def scanTokens: List[Token] = {
     while (!isAtEnd) {
       // We are at the beginning of the next lexeme.
       start = current

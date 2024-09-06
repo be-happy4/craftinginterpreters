@@ -1,16 +1,14 @@
-package com.craftinginterpreters
-package scala.lox
+package com.craftinginterpreters.scala.lox
 
 //> Parsing Expressions parser
 
 //> Statements and State parser-imports//> Statements and State parser-imports
 
-import scala.lox.TokenType.*
+import com.craftinginterpreters.scala.lox.TokenType.*
 
-import _root_.scala.collection.immutable.List
-import _root_.scala.collection.mutable.ListBuffer
-import java.nio.file.Files
 import java.nio.file.Path
+import scala.collection.immutable.List
+import scala.collection.mutable.ListBuffer
 
 
 object Parser:
@@ -23,9 +21,9 @@ object Parser:
     val statements = Parser(Scanner(source).scanTokens).parse
     val printer = AstPrinter()
     statements.map(printer.print).foreach(println)
-    
 
-class Parser private[lox]( //< parse-error
+
+class Parser( //< parse-error
   private val tokens: List[Token]) {
   private var current = 0
 
@@ -39,7 +37,7 @@ class Parser private[lox]( //< parse-error
     }
   */
   //> Statements and State parse
-  private[lox] def parse: List[Stmt] = {
+  def parse: List[Stmt] = {
     val statements = new ListBuffer[Stmt]
     while (!isAtEnd) {
       /* Statements and State parse < Statements and State parse-declaration

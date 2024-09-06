@@ -1,9 +1,8 @@
-package com.craftinginterpreters
-package scala
+package com.craftinginterpreters.scala
 
 object TestQuotes {
 
-  import _root_.scala.quoted.*
+  import scala.quoted.*
 
   def oddEven(n: Expr[Int])(using Quotes): Expr[String] = {
     import quotes.reflect.*

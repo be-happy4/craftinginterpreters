@@ -1,9 +1,8 @@
 //> Appendix II expr
 
-package com.craftinginterpreters
-package scala.lox
+package com.craftinginterpreters.scala.lox
 
-import _root_.scala.collection.immutable.List
+import scala.collection.immutable.List
 
 sealed abstract class Expr:
   def accept[R](visitor: Expr.Visitor[R]): R =

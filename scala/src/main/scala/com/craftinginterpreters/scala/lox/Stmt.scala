@@ -1,9 +1,8 @@
 //> Appendix II stmt
 
-package com.craftinginterpreters
-package scala.lox
+package com.craftinginterpreters.scala.lox
 
-import _root_.scala.collection.immutable.List
+import scala.collection.immutable.List
 
 sealed abstract class Stmt:
   def accept[R](visitor: Stmt.Visitor[R]): R =
