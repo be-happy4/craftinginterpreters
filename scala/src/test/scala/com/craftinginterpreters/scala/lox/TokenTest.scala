@@ -32,8 +32,10 @@ object TokenTest:
     if !opts.ignoreLiteral then
       obtained.typ match
         // also check literal
-        case TokenType.STRING | TokenType.NUMBER =>
+        case TokenType.STRING =>
           assertEquals(obtained.literal.toString, expected.literal.toString)
+        case TokenType.NUMBER =>
+          assertEquals(BigDecimal(0), BigDecimal(obtained.literal.toString) - BigDecimal(expected.literal.toString))
         case _ =>
     if !opts.ignoreLexeme then
       assertEquals(obtained.lexeme, expected.lexeme)

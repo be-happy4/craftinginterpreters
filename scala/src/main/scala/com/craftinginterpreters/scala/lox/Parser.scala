@@ -52,14 +52,20 @@ class Parser( //< parse-error
 
   //< Statements and State parse
   //> expression
-  private def expression: Expr = {
+  private def expression: Expr =
     /* Parsing Expressions expression < Statements and State expression
         return equality();
     */
     //> Statements and State expression
-    assignment
+    var expr = assignment
+
+    if (matches(COMMA)) {
+
+    } else if (matches()) {
+
+    }
+    expr
     //< Statements and State expression
-  }
 
   //< expression
   //> Statements and State declaration
@@ -271,7 +277,6 @@ class Parser( //< parse-error
           return new Expr.Set(get.obj, get.name, value)
         case _ =>
           error(equals, "Invalid assignment target.") // [no-throw]
-
     }
     expr
   }
@@ -492,6 +497,7 @@ class Parser( //< parse-error
         case PRINT =>
         case RETURN =>
           return
+        case _ =>
       }
       advance
     }

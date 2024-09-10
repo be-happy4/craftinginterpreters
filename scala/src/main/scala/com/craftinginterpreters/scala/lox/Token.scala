@@ -12,5 +12,7 @@ class Token(
   val literal: Any,
   val line: Int = -1 // [location]
 ):
+  def this(typ: TokenType) =
+    this(typ, typ.key, null)
   override def toString: String = f"$typ $lexeme $literal"
 

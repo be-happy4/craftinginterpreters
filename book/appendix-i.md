@@ -68,9 +68,12 @@ separate rule for each precedence level to make it explicit.
 ```ebnf
 expression     → assignment ;
 
+comma          → assignment "," comma
+               | assignment ;
 assignment     → ( call "." )? IDENTIFIER "=" assignment
                | logic_or ;
 
+ternary        → expression "?" expression ":" expression;
 logic_or       → logic_and ( "or" logic_and )* ;
 logic_and      → equality ( "and" equality )* ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;

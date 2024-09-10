@@ -20,4 +20,11 @@ class ScannerTest extends BaseTest:
       parseTokens("print,string ok,semicolon")
     )
 
+  test("test logical operator"):
+    assertTokens(
+      tokens("logical_operator", "mixed"),
+      parseTokens("number 1,and,number 2,or,number 3,and,number 4,semicolon,"
+        + "number 5,or,number 6,and,number 7,or,number 8,semicolon")
+    )
+
 

@@ -20,6 +20,8 @@ enum TokenType(val key: String):
   case SEMICOLON extends TokenType(";")
   case SLASH extends TokenType("/")
   case STAR extends TokenType("*")
+  case QUESTION extends TokenType("?")
+  case COLON extends TokenType(":")
   // One or two character tokens.
   case BANG extends TokenType("!")
   case BANG_EQUAL extends TokenType("!=")
