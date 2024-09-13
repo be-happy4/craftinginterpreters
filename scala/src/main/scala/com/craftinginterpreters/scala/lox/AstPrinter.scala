@@ -138,10 +138,11 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
   override def visitVariableExpr(expr: Expr.Variable): String = expr.name.lexeme
 
   override def visitCommaExpr(expr: Expr.Comma): String =
-    expr.expressions.map(_.accept(this)).mkString("(", ", ", ")")
+    s"(, ${expr.left.accept(this)} ${expr.right.accept(this)})"
 
   override def visitTernaryExpr(expr: Expr.Ternary): String =
-    s"(${expr.condition} ? ${expr.positiveExpression} : ${expr.negativeExpression})"
+    s"(${expr.condition.accept(this)} ? ${expr.positiveExpression.accept(this)} : " +
+      s"${expr.negativeExpression.accept(this)})"
 
   //< Statements and State omit
   //< visit-methods

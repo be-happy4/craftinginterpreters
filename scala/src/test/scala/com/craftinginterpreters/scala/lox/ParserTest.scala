@@ -1,6 +1,7 @@
 package com.craftinginterpreters.scala.lox
 
 import com.craftinginterpreters.scala.lox.ParserTest.assertASTs
+import com.craftinginterpreters.scala.lox.TokenType.{EQUAL_EQUAL, GREATER, LESS}
 import munit.Assertions.assertEquals
 
 import scala.util.chaining.scalaUtilChainingOps
@@ -48,3 +49,66 @@ class ParserTest extends ScannerTest:
     )
     expected.map(ParserTest.printer.print).foreach(println)
     assertASTs(statements("logical_operator", "mixed"), expected)
+
+  test("test comma expression for parser"):
+    val expected = List(
+      Stmt.Expression(
+        Expr.Comma(
+          Expr.Literal(1),
+          Expr.Comma(
+            Expr.Literal(2),
+            Expr.Literal(3)
+          )
+        )),
+      Stmt.Expression(
+        Expr.Comma(
+          Expr.Logical(
+            Expr.Literal(1),
+            Token(TokenType.EQUAL_EQUAL),
+            Expr.Literal(2)
+          ),
+          Expr.Logical(
+            Expr.Logical(
+              Expr.Literal(3),
+              Token(TokenType.GREATER),
+              Expr.Literal(4)
+            ),
+            Token(TokenType.OR),
+            Expr.Logical(
+              Expr.Literal(5),
+              Token(TokenType.LESS),
+              Expr.Literal(6)
+            )))))
+    assertASTs(statements("comma", "comma"), expected)
+
+  test("test ternary expression for parser"):
+    val expected = List(
+      Stmt.Expression(
+        Expr.Ternary(
+          Expr.Logical(
+            Expr.Literal(1),
+            Token(EQUAL_EQUAL),
+            Expr.Literal(2)
+          ),
+          Expr.Literal(3),
+          Expr.Literal(4)
+        )),
+      Stmt.Expression(
+        Expr.Ternary(
+          Expr.Logical(
+            Expr.Literal(1),
+            Token(LESS),
+            Expr.Literal(2)
+          ),
+          Expr.Ternary(
+            Expr.Logical(
+              Expr.Literal(3),
+              Token(GREATER),
+              Expr.Literal(4)
+            ),
+            Expr.Literal(5),
+            Expr.Literal(6),
+          ),
+          Expr.Literal(7))))
+    expected.map(ParserTest.printer.print).foreach(println)
+    assertASTs(statements("ternary", "ternary"), expected)

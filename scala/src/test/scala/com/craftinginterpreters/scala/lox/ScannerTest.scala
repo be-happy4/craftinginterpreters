@@ -23,8 +23,30 @@ class ScannerTest extends BaseTest:
   test("test logical operator"):
     assertTokens(
       tokens("logical_operator", "mixed"),
-      parseTokens("number 1,and,number 2,or,number 3,and,number 4,semicolon,"
-        + "number 5,or,number 6,and,number 7,or,number 8,semicolon")
+      parseTokens("""
+        |number 1,and,number 2,or,number 3,and,number 4,semicolon,
+        |number 5,or,number 6,and,number 7,or,number 8,semicolon,
+        |number 1,or,number 2,or,number 3,and,number 4,or,number 5,or,number 6,semicolon
+        |""".stripMargin.replaceAll("\n", ""))
+    )
+
+  test("test comma expression"):
+    assertTokens(
+      tokens("comma", "comma"),
+      parseTokens("""
+        |number 1,comma,number 2,comma,number 3,semicolon,
+        |number 1,EQUAL_EQUAL,number 2,comma,number 3,GREATER,number 4,or,number 5,LESS,number 6,semicolon
+        |""".stripMargin.replaceAll("\n", ""))
+    )
+
+  test("test ternary expression"):
+    assertTokens(
+      tokens("ternary", "ternary"),
+      parseTokens("""
+        |number 1,EQUAL_EQUAL,number 2,QUESTION,NUMBER 3,COLON,NUMBER 4,semicolon,
+        |number 1,LESS,number 2,QUESTION,number 3,GREATER,number 4,QUESTION,number 5,
+        |COLON,number 6,COLON,number 7,semicolon
+        |""".stripMargin.replaceAll("\n", ""))
     )
 
 

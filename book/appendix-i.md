@@ -66,10 +66,8 @@ encode the precedence relationships and specify that elsewhere. Here, we use a
 separate rule for each precedence level to make it explicit.
 
 ```ebnf
-expression     → assignment ;
+expression     → assignment ( "," assignment )*;
 
-comma          → assignment "," comma
-               | assignment ;
 assignment     → ( call "." )? IDENTIFIER "=" assignment
                | logic_or ;
 

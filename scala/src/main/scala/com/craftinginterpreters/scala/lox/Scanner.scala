@@ -75,6 +75,8 @@ class Scanner(private val source: String): //< scan-state
       case '+' => addToken(PLUS)
       case ';' => addToken(SEMICOLON)
       case '*' => addToken(STAR)
+      case '?' => addToken(QUESTION)
+      case ':' => addToken(COLON)
       // [slash]
 
       //> two-char-tokens

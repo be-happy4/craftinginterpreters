@@ -89,7 +89,7 @@ object Expr:
   class Variable(val name: Token) extends Expr
 //< expr-variable
 //> expr-comma
-  class Comma(val expressions: List[Expr]) extends Expr
+  class Comma(val left: Expr, val right: Expr) extends Expr
 //< expr-comma
 //> expr-ternary
   class Ternary(

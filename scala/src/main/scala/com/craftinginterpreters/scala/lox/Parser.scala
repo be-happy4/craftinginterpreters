@@ -57,14 +57,14 @@ class Parser( //< parse-error
         return equality();
     */
     //> Statements and State expression
-    var expr = assignment
-
-    if (matches(COMMA)) {
-
-    } else if (matches()) {
-
-    }
-    expr
+    comma
+    //< Statements and State expression
+    
+  private def comma: Expr =
+    val expr = assignment
+    if (matches(COMMA))
+      Expr.Comma(expr, comma)
+    else expr
     //< Statements and State expression
 
   //< expression
@@ -221,15 +221,14 @@ class Parser( //< parse-error
 
   //< Control Flow while-statement
   //> Statements and State parse-expression-statement
-  private def expressionStatement: Stmt.Expression = {
+  private def expressionStatement: Stmt.Expression =
     val expr = expression
     consume(SEMICOLON, "Expect ';' after expression.")
     new Stmt.Expression(expr)
-  }
 
   //< Statements and State parse-expression-statement
   //> Functions parse-function
-  private def function(kind: String): Stmt.Function = {
+  private def function(kind: String): Stmt.Function =
     val name = consume(IDENTIFIER, "Expect " + kind + " name.")
     //> parse-parameters
     consume(LEFT_PAREN, "Expect '(' after " + kind + " name.")
@@ -247,38 +246,47 @@ class Parser( //< parse-error
     val body = block
     new Stmt.Function(name, parameters.toList, body)
     //< parse-body
-  }
 
   //< Functions parse-function
   //> Statements and State block
-  private def block: List[Stmt] = {
+  private def block: List[Stmt] =
     val statements = new ListBuffer[Stmt]
     while (!check(RIGHT_BRACE) && !isAtEnd) statements += declaration
     consume(RIGHT_BRACE, "Expect '}' after block.")
     statements.toList
-  }
 
   //< Statements and State block
   //> Statements and State parse-assignment
-  private def assignment: Expr = {
+  private def assignment: Expr =
     /* Statements and State parse-assignment < Control Flow or-in-assignment
         Expr expr = equality();
     */
     //> Control Flow or-in-assignment
-    val expr = or
+    var expr = ternary
     //< Control Flow or-in-assignment
     if (matches(EQUAL)) {
       val equals = previous
       val value = assignment
-      expr match
+      expr = expr match
         case variable: Expr.Variable =>
-          return new Expr.Assign(variable.name, value)
+          new Expr.Assign(variable.name, value)
         case get: Expr.Get =>
-          return new Expr.Set(get.obj, get.name, value)
+          new Expr.Set(get.obj, get.name, value)
         case _ =>
           error(equals, "Invalid assignment target.") // [no-throw]
+          expr
     }
     expr
+
+  //< Statements and State parse-assignment
+  //> Control Flow or
+  private def ternary: Expr = {
+    val expr = or
+    if (matches(QUESTION)) {
+      val positiveExpression = ternary
+      consume(COLON, "Expect ':' after '?' expression.")
+      new Expr.Ternary(expr, positiveExpression, ternary)
+    } else expr
   }
 
   //< Statements and State parse-assignment
