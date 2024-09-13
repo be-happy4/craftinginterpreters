@@ -37,7 +37,7 @@ class Parser( //< parse-error
     }
   */
   //> Statements and State parse
-  def parse: List[Stmt] = {
+  def parse: List[Stmt] =
     val statements = new ListBuffer[Stmt]
     while (!isAtEnd) {
       /* Statements and State parse < Statements and State parse-declaration
@@ -48,7 +48,6 @@ class Parser( //< parse-error
     }
     statements.toList // [parse-error-handling]
 
-  }
 
   //< Statements and State parse
   //> expression
@@ -86,7 +85,7 @@ class Parser( //< parse-error
 
   //< Statements and State declaration
   //> Classes parse-class-declaration
-  private def classDeclaration: Stmt.Class = {
+  private def classDeclaration: Stmt.Class =
     val name = consume(IDENTIFIER, "Expect class name.")
     //> Inheritance parse-superclass
     var superclass: Expr.Variable = null
@@ -105,11 +104,10 @@ class Parser( //< parse-error
     //> Inheritance construct-class-ast
     new Stmt.Class(name, superclass, methods.toList)
     //< Inheritance construct-class-ast
-  }
 
   //< Classes parse-class-declaration
   //> Statements and State parse-statement
-  private def statement: Stmt = {
+  private def statement: Stmt =
     //> Control Flow match-for
     if (matches(FOR)) return forStatement
     //< Control Flow match-for
@@ -127,11 +125,10 @@ class Parser( //< parse-error
     if (matches(LEFT_BRACE)) return new Stmt.Block(block)
     //< parse-block
     expressionStatement
-  }
 
   //< Statements and State parse-statement
   //> Control Flow for-statement
-  private def forStatement: Stmt = {
+  private def forStatement: Stmt =
     consume(LEFT_PAREN, "Expect '(' after 'for'.")
     /* Control Flow for-statement < Control Flow for-initializer
         // More here...
@@ -166,11 +163,10 @@ class Parser( //< parse-error
     //< for-desugar-initializer
     body
     //< for-body
-  }
 
   //< Control Flow for-statement
   //> Control Flow if-statement
-  private def ifStatement: Stmt.If = {
+  private def ifStatement: Stmt.If =
     consume(LEFT_PAREN, "Expect '(' after 'if'.")
     val condition = expression
     consume(RIGHT_PAREN, "Expect ')' after if condition.") // [parens]
@@ -179,45 +175,40 @@ class Parser( //< parse-error
     var elseBranch: Stmt = null
     if (matches(ELSE)) elseBranch = statement
     new Stmt.If(condition, thenBranch, elseBranch)
-  }
 
   //< Control Flow if-statement
   //> Statements and State parse-print-statement
-  private def printStatement: Stmt.Print = {
+  private def printStatement: Stmt.Print =
     val value = expression
     consume(SEMICOLON, "Expect ';' after value.")
     new Stmt.Print(value)
-  }
 
   //< Statements and State parse-print-statement
   //> Functions parse-return-statement
-  private def returnStatement: Stmt.Return = {
+  private def returnStatement: Stmt.Return =
     val keyword = previous
     var value: Expr = null
     if (!check(SEMICOLON)) value = expression
     consume(SEMICOLON, "Expect ';' after return value.")
     new Stmt.Return(keyword, value)
-  }
 
   //< Functions parse-return-statement
   //> Statements and State parse-var-declaration
-  private def varDeclaration: Stmt.Var = {
+  private def varDeclaration: Stmt.Var =
     val name = consume(IDENTIFIER, "Expect variable name.")
     var initializer: Expr = null
     if (matches(EQUAL)) initializer = expression
     consume(SEMICOLON, "Expect ';' after variable declaration.")
     new Stmt.Var(name, initializer)
-  }
 
   //< Statements and State parse-var-declaration
   //> Control Flow while-statement
-  private def whileStatement: Stmt.While = {
+  private def whileStatement: Stmt.While =
     consume(LEFT_PAREN, "Expect '(' after 'while'.")
     val condition = expression
     consume(RIGHT_PAREN, "Expect ')' after condition.")
     val body = statement
     new Stmt.While(condition, body)
-  }
 
   //< Control Flow while-statement
   //> Statements and State parse-expression-statement
@@ -280,18 +271,17 @@ class Parser( //< parse-error
 
   //< Statements and State parse-assignment
   //> Control Flow or
-  private def ternary: Expr = {
+  private def ternary: Expr =
     val expr = or
     if (matches(QUESTION)) {
       val positiveExpression = ternary
       consume(COLON, "Expect ':' after '?' expression.")
       new Expr.Ternary(expr, positiveExpression, ternary)
     } else expr
-  }
 
   //< Statements and State parse-assignment
   //> Control Flow or
-  private def or: Expr = {
+  private def or: Expr =
     var expr = and
     while (matches(OR)) {
       val operator = previous
@@ -299,11 +289,10 @@ class Parser( //< parse-error
       expr = new Expr.Logical(expr, operator, right)
     }
     expr
-  }
 
   //< Control Flow or
   //> Control Flow and
-  private def and: Expr = {
+  private def and: Expr =
     var expr = equality
     while (matches(AND)) {
       val operator = previous
@@ -311,11 +300,10 @@ class Parser( //< parse-error
       expr = new Expr.Logical(expr, operator, right)
     }
     expr
-  }
 
   //< Control Flow and
   //> equality
-  private def equality: Expr = {
+  private def equality: Expr =
     var expr = comparison
     while (matches(BANG_EQUAL, EQUAL_EQUAL)) {
       val operator = previous
@@ -323,11 +311,10 @@ class Parser( //< parse-error
       expr = new Expr.Binary(expr, operator, right)
     }
     expr
-  }
 
   //< equality
   //> comparison
-  private def comparison: Expr = {
+  private def comparison: Expr =
     var expr = term
     while (matches(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
       val operator = previous
@@ -335,11 +322,10 @@ class Parser( //< parse-error
       expr = new Expr.Binary(expr, operator, right)
     }
     expr
-  }
 
   //< comparison
   //> term
-  private def term: Expr = {
+  private def term: Expr =
     var expr = factor
     while (matches(MINUS, PLUS)) {
       val operator = previous
@@ -347,11 +333,10 @@ class Parser( //< parse-error
       expr = new Expr.Binary(expr, operator, right)
     }
     expr
-  }
 
   //< term
   //> factor
-  private def factor: Expr = {
+  private def factor: Expr =
     var expr = unary
     while (matches(SLASH, STAR)) {
       val operator = previous
@@ -359,11 +344,10 @@ class Parser( //< parse-error
       expr = new Expr.Binary(expr, operator, right)
     }
     expr
-  }
 
   //< factor
   //> unary
-  private def unary: Expr = {
+  private def unary: Expr =
     if (matches(BANG, MINUS)) {
       val operator = previous
       val right = unary
@@ -375,11 +359,10 @@ class Parser( //< parse-error
     //> Functions unary-call
     call
     //< Functions unary-call
-  }
 
   //< unary
   //> Functions finish-call
-  private def finishCall(callee: Expr): Expr.Call = {
+  private def finishCall(callee: Expr): Expr.Call =
     val arguments = new ListBuffer[Expr]
     if (!check(RIGHT_PAREN)) then
       while
@@ -391,11 +374,10 @@ class Parser( //< parse-error
       do ()
     val paren = consume(RIGHT_PAREN, "Expect ')' after arguments.")
     new Expr.Call(callee, paren, arguments.toList)
-  }
 
   //< Functions finish-call
   //> Functions call
-  private def call: Expr = {
+  private def call: Expr =
     var expr = primary
     var flag = true
     while flag do // [while-true]
@@ -406,11 +388,10 @@ class Parser( //< parse-error
       }
       else flag = false
     expr
-  }
 
   //< Functions call
   //> primary
-  private def primary: Expr = {
+  private def primary: Expr =
     if (matches(FALSE)) return new Expr.Literal(false)
     if (matches(TRUE)) return new Expr.Literal(true)
     if (matches(NIL)) return new Expr.Literal(null)
@@ -437,11 +418,10 @@ class Parser( //< parse-error
     //> primary-error
     throw error(peek, "Expect expression.")
     //< primary-error
-  }
 
   //< primary
   //> match
-  private def matches(types: TokenType*): Boolean = {
+  private def matches(types: TokenType*): Boolean =
     var flag = true
     for (typ <- types if flag) {
       if (check(typ)) {
@@ -450,28 +430,24 @@ class Parser( //< parse-error
       }
     }
     !flag
-  }
 
   //< match
   //> consume
-  private def consume(typ: TokenType, message: String): Token = {
+  private def consume(typ: TokenType, message: String): Token =
     if (check(typ)) return advance
     throw error(peek, message)
-  }
 
   //< consume
   //> check
-  private def check(typ: TokenType): Boolean = {
+  private def check(typ: TokenType): Boolean =
     if (isAtEnd) return false
     peek.typ eq typ
-  }
 
   //< check
   //> advance
-  private def advance: Token = {
+  private def advance: Token =
     if (!isAtEnd) current += 1
     previous
-  }
 
   //< advance
   //> utils
@@ -483,15 +459,13 @@ class Parser( //< parse-error
 
   //< utils
   //> error
-  private def error(token: Token, message: String): RuntimeException = {
-    // TODO: fixme
-    // Lox.error(token, message)
+  private def error(token: Token, message: String): RuntimeException =
+    Lox.error(token, message)
     new Parser.ParseError
-  }
 
   //< error
   //> synchronize
-  private def synchronize(): Unit = {
+  private def synchronize(): Unit =
     advance
     while (!isAtEnd) {
       if (previous.typ eq SEMICOLON) return
@@ -509,6 +483,5 @@ class Parser( //< parse-error
       }
       advance
     }
-  }
   //< synchronize
 }

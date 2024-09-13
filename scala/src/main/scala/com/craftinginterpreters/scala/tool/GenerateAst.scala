@@ -57,7 +57,7 @@ object GenerateAst {
       "Unary    : Token operator, Expr right",
       "Variable : Token name",
       //> Statements and State var-expr
-      "Comma    : List<Expr> expressions",
+      "Comma    : Expr left, Expr right",
       "Ternary  : Expr condition, Expr positiveExpression, Expr negativeExpression",
     ))
     //> Statements and State stmt-ast

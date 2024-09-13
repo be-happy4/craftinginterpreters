@@ -2,14 +2,9 @@
 //> Scanning lox-class
 package com.craftinginterpreters.scala.lox
 
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
+import java.io.{BufferedReader, IOException, InputStreamReader}
 import java.nio.charset.Charset
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.util
-import java.util.List
+import java.nio.file.{Files, Paths}
 
 
 object Lox {
@@ -17,10 +12,10 @@ object Lox {
 //  private val interpreter = new Interpreter
   //< Evaluating Expressions interpreter-instance
   //> had-error
-  private[lox] var hadError = false
+var hadError = false
   //< had-error
   //> Evaluating Expressions had-runtime-error-field
-  private[lox] var hadRuntimeError = false
+  var hadRuntimeError = false
 
   //< Evaluating Expressions had-runtime-error-field
   @throws[IOException]
@@ -110,7 +105,7 @@ object Lox {
 
   //< run
   //> lox-error
-  private[lox] def error(line: Int, message: String): Unit = {
+  def error(line: Int, message: String): Unit = {
     report(line, "", message)
   }
 
@@ -121,14 +116,14 @@ object Lox {
 
   //< lox-error
   //> Parsing Expressions token-error
-  private[lox] def error(token: Token, message: String): Unit = {
+  def error(token: Token, message: String): Unit = {
     if (token.typ eq TokenType.EOF) report(token.line, " at end", message)
     else report(token.line, " at '" + token.lexeme + "'", message)
   }
 
   //< Parsing Expressions token-error
   //> Evaluating Expressions runtime-error-method
-  private[lox] def runtimeError(error: RuntimeError): Unit = {
+  def runtimeError(error: RuntimeError): Unit = {
     System.err.println(error.getMessage + "\n[line " + error.token.line + "]")
     hadRuntimeError = true
   }

@@ -66,12 +66,13 @@ encode the precedence relationships and specify that elsewhere. Here, we use a
 separate rule for each precedence level to make it explicit.
 
 ```ebnf
-expression     → assignment ( "," assignment )*;
+expression     → comma;
+comma          → assignment ( "," comma )?;
 
 assignment     → ( call "." )? IDENTIFIER "=" assignment
                | logic_or ;
 
-ternary        → expression "?" expression ":" expression;
+ternary        → expression "?" ternary ":" ternary;
 logic_or       → logic_and ( "or" logic_and )* ;
 logic_and      → equality ( "and" equality )* ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;

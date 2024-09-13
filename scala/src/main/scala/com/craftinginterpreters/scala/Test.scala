@@ -1,17 +1,18 @@
 package com.craftinginterpreters.scala
 
-import TestQuotes.{oddEven, oddEvenQuotes}
-
-import java.nio.file.Path
-import java.nio.file.Files
-import scala.util.chaining.scalaUtilChainingOps
+import com.craftinginterpreters.scala.TestQuotes.oddEven
 
 object Test {
   inline def v(x: Int) = ${ oddEven('x) }
 
   def main(args: Array[String]): Unit = {
-    println(
-      "path".pipe(_ + ".lox").pipe(Path.of(_)).pipe(Files.exists(_)))
-
+    val args = 1;
+    println(args)
+    val a = "outer"
+    {
+      val a = "inner"
+      println(a) // expect: inner
+    }
+    println(a) // expect: outer
   }
 }
