@@ -245,7 +245,8 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Unit]:
       case PLUS =>
         (left, right) match
           case (dl: Double, dr: Double) => dl + dr
-          case (dl: String, dr: String) => dl + dr
+          case (dl: String, _) => dl + stringify(right)
+          case (_, dr: String) => stringify(left) + dr
           case _ => throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.")
       //< string-wrong-type
       //< binary-plus
@@ -395,14 +396,10 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Unit]:
 
   //< is-equal
   //> stringify
-  private def stringify(obj: Any): String =
-    if (obj == null) return "nil"
-    if (obj.isInstanceOf[Double]) {
-      var text = obj.toString
-      if (text.endsWith(".0")) text = text.substring(0, text.length - 2)
-      return text
-    }
-    obj.toString
+  private def stringify(obj: Any): String = obj match
+    case null => "nil"
+    case Double => obj.toString.stripSuffix(".0")
+    case _ => obj.toString
 
   override def visitCommaExpr(expr: Expr.Comma): Any = ???
 
