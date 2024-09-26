@@ -1,6 +1,5 @@
 package com.craftinginterpreters.scala.lox
 
-import java.util
 import scala.collection.mutable
 
 
@@ -16,8 +15,8 @@ class Environment: //> environment-constructors
 
   //< environment-constructors
   //> environment-get
-  def get(name: Token): Any = {
-    if (values.contains(name.lexeme)) return values(name.lexeme)
+  def get(name: Token): Option[Any] = {
+    if (values.contains(name.lexeme)) return values.get(name.lexeme)
     //> environment-get-enclosing
     if (enclosing != null) return enclosing.get(name)
     //< environment-get-enclosing
@@ -56,7 +55,7 @@ class Environment: //> environment-constructors
 
   //< Resolving and Binding ancestor
   //> Resolving and Binding get-at
-  def getAt(distance: Int, name: String) = ancestor(distance).values.get(name)
+  def getAt(distance: Int, name: String): Option[Any] = ancestor(distance).values.get(name)
 
   //< Resolving and Binding get-at
   //> Resolving and Binding assign-at

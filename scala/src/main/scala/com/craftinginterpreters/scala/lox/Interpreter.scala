@@ -3,6 +3,7 @@ package com.craftinginterpreters.scala.lox
 
 //> Functions import-array-list
 
+import com.craftinginterpreters.scala.lox.Interpreter.stringify
 import com.craftinginterpreters.scala.lox.TokenType.*
 
 import scala.collection.mutable
@@ -19,7 +20,7 @@ class Interpreter implements Expr.Visitor<Object> {
 //> Functions interpreter-constructor
 //< Resolving and Binding locals-field
 //> Statements and State environment-field
-class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Unit]:
+class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   //< Statements and State interpreter
   /* Statements and State environment-field < Functions global-environment
@@ -53,11 +54,9 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Unit]:
     }
   */
   //> Statements and State interpret
-  def interpret(statements: List[Stmt]): Unit =
+  def interpret(statements: List[Stmt]): Any =
     try {
-      for (statement <- statements) {
-        execute(statement)
-      }
+      statements.map(execute)
     } catch {
       case error: RuntimeError =>
         Lox.runtimeError(error)
@@ -69,7 +68,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Unit]:
 
   //< evaluate
   //> Statements and State execute
-  private def execute(stmt: Stmt): Unit =
+  private def execute(stmt: Stmt): Any =
     stmt.accept(this)
 
   //< Statements and State execute
@@ -139,7 +138,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Unit]:
 
   //< Classes interpreter-visit-class
   //> Statements and State visit-expression-stmt
-  override def visitExpressionStmt(stmt: Stmt.Expression): Unit =
+  override def visitExpressionStmt(stmt: Stmt.Expression): Any =
     evaluate(stmt.expression)
 
   //< Statements and State visit-expression-stmt
@@ -178,7 +177,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Unit]:
   //< Functions visit-return
   //> Statements and State visit-var
   override def visitVarStmt(stmt: Stmt.Var): Unit =
-    var value: Any = null
+    var value: Any = Token.dummy
     if (stmt.initializer != null) value = evaluate(stmt.initializer)
     environment.define(stmt.name.lexeme, value)
 
@@ -363,9 +362,15 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Unit]:
 
   //> Resolving and Binding look-up-variable
   private def lookUpVariable(name: Token, expr: Expr): Any =
-    locals.get(expr) match
+    val opt = locals.get(expr) match
       case Some(distance) => environment.getAt(distance, name.lexeme)
       case None => globals.get(name)
+    opt match
+      case Some(v) =>
+        if v == Token.dummy then
+          throw new RuntimeError(name, "Variable '" + name.lexeme + "' not initialized.")
+        v
+      case None => throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.")
 
   //< Resolving and Binding look-up-variable
   //< Statements and State visit-variable
@@ -394,14 +399,21 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Unit]:
   private def isEqual(a: Any, b: Any): Boolean =
     if a == null then b == null else a.equals(b)
 
+  override def visitCommaExpr(expr: Expr.Comma): Any =
+    evaluate(expr.left)
+    evaluate(expr.right)
+
+  override def visitTernaryExpr(expr: Expr.Ternary): Any =
+    if isTruthy(evaluate(expr.condition)) then
+      evaluate(expr.positiveExpression)
+    else evaluate(expr.negativeExpression)
+//< stringify
+
+object Interpreter:
   //< is-equal
   //> stringify
-  private def stringify(obj: Any): String = obj match
+  def stringify(obj: Any): String = obj match
     case null => "nil"
-    case Double => obj.toString.stripSuffix(".0")
+    case _: Double => obj.toString.stripSuffix(".0")
     case _ => obj.toString
 
-  override def visitCommaExpr(expr: Expr.Comma): Any = ???
-
-  override def visitTernaryExpr(expr: Expr.Ternary): Any = ???
-//< stringify
