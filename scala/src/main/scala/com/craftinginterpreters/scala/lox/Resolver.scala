@@ -294,7 +294,7 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
     if (scopes.isEmpty) return
     val scope = scopes.head
     //> duplicate-variable
-    if (scope(name.lexeme)) Lox.error(name, "Already a variable with this name in this scope.")
+    if (scope.getOrElse(name.lexeme, false)) Lox.error(name, "Already a variable with this name in this scope.")
     //< duplicate-variable
     scope += name.lexeme -> false
 
