@@ -52,6 +52,7 @@ enum TokenType(val key: String):
   case TRUE extends TokenType("true")
   case VAR extends TokenType("var")
   case WHILE extends TokenType("while")
+  case BREAK extends TokenType("break")
 
   
   

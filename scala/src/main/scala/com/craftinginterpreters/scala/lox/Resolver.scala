@@ -32,7 +32,7 @@ object Resolver: //> function-type
 class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   with Stmt.Visitor[Unit]:
   //> scopes-field
-  final private val scopes = new mutable.ArrayDeque[mutable.HashMap[String, Boolean]]
+  private val scopes = new mutable.ArrayDeque[mutable.HashMap[String, Boolean]]
   //< scopes-field
   //> function-type-field
   private var currentFunction = Resolver.FunctionType.NONE
@@ -158,6 +158,8 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   override def visitWhileStmt(stmt: Stmt.While): Unit =
     resolve(stmt.condition)
     resolve(stmt.body)
+
+  override def visitBreakStmt(stmt: Stmt.Break): Unit = {}
 
   //< visit-while-stmt
   //> visit-assign-expr
@@ -291,6 +293,7 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   //< end-scope
   //> declare
   private def declare(name: Token): Unit =
+    // TODO: enable global variable definition
     if (scopes.isEmpty) return
     val scope = scopes.head
     //> duplicate-variable

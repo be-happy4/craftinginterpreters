@@ -2,7 +2,7 @@
 //> Scanning scanner-class
 package com.craftinginterpreters.scala.lox
 
-import TokenType.*
+import com.craftinginterpreters.scala.lox.TokenType.*
 
 import java.nio.file.Path
 import scala.collection.immutable.{List, Map}
@@ -28,6 +28,7 @@ object Scanner:
     "true" -> TRUE,
     "var" -> VAR,
     "while" -> WHILE,
+    "break" -> BREAK,
   )
 
   def apply(source: String): Scanner =

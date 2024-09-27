@@ -1,5 +1,8 @@
 package com.craftinginterpreters.scala.lox
 
+import java.nio.charset.Charset
+import java.nio.file.{Files, Paths}
+
 //> Representing Code ast-printer
 //> omit//> omit
 
@@ -58,9 +61,7 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
       builder.append(param.lexeme)
     }
     builder.append(") ")
-    for (body <- stmt.body) {
-      builder.append(body.accept(this))
-    }
+    builder.append(stmt.body.accept(this))
     builder.append(")")
     builder.toString
   }
@@ -182,16 +183,18 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
         case _ => builder.append(part)
     }
 
+  override def visitBreakStmt(stmt: Stmt.Break): String = "break"
+
 object AstPrinter:
   //< omit
   def main(args: Array[String]): Unit =
-    val expression = new Expr.Binary(
-      new Expr.Unary(
-        new Token(TokenType.MINUS, "-", null, 1),
-        new Expr.Literal(123)),
-      new Token(TokenType.STAR, "*", null, 1),
-      new Expr.Grouping(
-        new Expr.Literal(45.67)))
 
-    println(new AstPrinter().print(expression))
+    val bytes = Files.readAllBytes(Paths.get("test/while/break.lox"))
+    val source = new String(bytes, Charset.defaultCharset)
+    val scanner = new Scanner(source)
+    val tokens = scanner.scanTokens
+    val parser = new Parser(tokens)
+    val statements = parser.parse
+    val printer = AstPrinter()
+    statements.map(printer.print).foreach(println)
 

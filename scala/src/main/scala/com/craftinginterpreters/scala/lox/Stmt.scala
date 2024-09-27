@@ -16,6 +16,7 @@ sealed abstract class Stmt:
       case x: Stmt.Return => visitor.visitReturnStmt(x)
       case x: Stmt.Var => visitor.visitVarStmt(x)
       case x: Stmt.While => visitor.visitWhileStmt(x)
+      case x: Stmt.Break => visitor.visitBreakStmt(x)
 
 object Stmt:
   trait Visitor[R]:
@@ -28,6 +29,8 @@ object Stmt:
     def visitReturnStmt(stmt: Stmt.Return): R
     def visitVarStmt(stmt: Stmt.Var): R
     def visitWhileStmt(stmt: Stmt.While): R
+
+    def visitBreakStmt(stmt: Stmt.Break): R
 
 // Nested Stmt classes here...
 //> stmt-block
@@ -46,7 +49,7 @@ object Stmt:
   class Function(
     val name: Token,
     val params: List[Token],
-    val body: List[Stmt]) extends Stmt
+  val body: Stmt) extends Stmt
 //< stmt-function
 //> stmt-if
   class If(
@@ -66,5 +69,8 @@ object Stmt:
 //> stmt-while
   class While(val condition: Expr, val body: Stmt) extends Stmt
 //< stmt-while
+//> stmt-break
+class Break extends Stmt
+//< stmt-break
 
 //< Appendix II stmt

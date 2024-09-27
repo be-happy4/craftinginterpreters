@@ -9,8 +9,10 @@ import scala.collection.immutable.List
 
 object GenerateAst {
   def parseClassDef(str: String): ClassDef =
-    val Array(className, params) = str.split(":").map(_.trim)
-    ClassDef(className, params.split(", ").map(parseParamDef).toList)
+    val arr = str.split(":").map(_.trim)
+    val className = arr(0)
+    val params = if arr.length > 1 then arr(1).split(", ").toList else List[String]()
+    ClassDef(className, params.map(parseParamDef))
     
   def parseParamDef(str: String): ParamDef =
     val Array(typeName, paramName) = str.split(" ").map(_.trim)
@@ -69,7 +71,7 @@ object GenerateAst {
       //> Inheritance superclass-ast
       "Class      : Token name, Expr.Variable superclass, List<Stmt.Function> methods", //< Inheritance superclass-ast
       "Expression : Expr expression", //> Functions function-ast
-      "Function   : Token name, List<Token> params, List<Stmt> body", //< Functions function-ast
+      "Function   : Token name, List<Token> params, Stmt body", //< Functions function-ast
       //> Control Flow if-ast
       "If         : Expr condition, Stmt thenBranch, Stmt elseBranch", //< Control Flow if-ast
       /* Statements and State stmt-ast < Statements and State var-stmt-ast
@@ -84,7 +86,8 @@ object GenerateAst {
       */
       //> Control Flow while-ast
       "Var        : Token name, Expr initializer",
-      "While      : Expr condition, Stmt body"
+      "While      : Expr condition, Stmt body",
+      "Break",
     ))
   //< Statements and State stmt-ast
   //< call-define-ast
@@ -170,8 +173,8 @@ object GenerateAst {
     // the line length on the Appendix II page. Wrap it.
     // Store parameters in fields.
     // Constructor.
-    var prefix = "("
-    val suffix = s") extends $baseName"
+    var prefix = if params.isEmpty then "" else "("
+    val suffix = (if params.isEmpty then "" else ")") + s" extends $baseName"
     var separator = ", "
     var mapper = (param: ParamDef) => s"val ${param.name}: ${param.typeName}"
     if params.length > 2 then
@@ -192,7 +195,7 @@ object GenerateAst {
 
   //< define-type
   //> pastry-visitor
-  private[tool] trait PastryVisitor {
+  trait PastryVisitor {
     def visitBeignet(beignet: GenerateAst#Beignet): Unit // [overload]
 
     def visitCruller(cruller: GenerateAst#Cruller): Unit
@@ -201,23 +204,23 @@ object GenerateAst {
 
 class GenerateAst { //< pastry-visitor
   //> pastries
-  abstract private[tool] class Pastry {
+  abstract class Pastry {
     //> pastry-accept
-    private[tool] def accept(visitor: GenerateAst.PastryVisitor): Unit
+    def accept(visitor: GenerateAst.PastryVisitor): Unit
     //< pastry-accept
   }
 
-  private[tool] class Beignet extends Pastry {
+  class Beignet extends Pastry {
     //> beignet-accept
-    override private[tool] def accept(visitor: GenerateAst.PastryVisitor): Unit = {
+    override def accept(visitor: GenerateAst.PastryVisitor): Unit = {
       visitor.visitBeignet(this)
     }
     //< beignet-accept
   }
 
-  private[tool] class Cruller extends Pastry {
+  class Cruller extends Pastry {
     //> cruller-accept
-    override private[tool] def accept(visitor: GenerateAst.PastryVisitor): Unit = {
+    override def accept(visitor: GenerateAst.PastryVisitor): Unit = {
       visitor.visitCruller(this)
     }
     //< cruller-accept

@@ -26,6 +26,7 @@ object Parser:
 class Parser( //< parse-error
   private val tokens: List[Token]) {
   private var current = 0
+  private var loopDepth = 0
 
   /* Parsing Expressions parse < Statements and State parse
     Expr parse() {
@@ -57,14 +58,14 @@ class Parser( //< parse-error
     */
     //> Statements and State expression
     comma
-    //< Statements and State expression
-    
+  //< Statements and State expression
+
   private def comma: Expr =
     val expr = assignment
     if (matches(COMMA))
       Expr.Comma(expr, comma)
     else expr
-    //< Statements and State expression
+  //< Statements and State expression
 
   //< expression
   //> Statements and State declaration
@@ -103,7 +104,7 @@ class Parser( //< parse-error
     */
     //> Inheritance construct-class-ast
     new Stmt.Class(name, superclass, methods.toList)
-    //< Inheritance construct-class-ast
+  //< Inheritance construct-class-ast
 
   //< Classes parse-class-declaration
   //> Statements and State parse-statement
@@ -122,13 +123,15 @@ class Parser( //< parse-error
     if (matches(WHILE)) return whileStatement
     //< Control Flow match-while
     //> parse-block
-    if (matches(LEFT_BRACE)) return new Stmt.Block(block)
+    if (matches(LEFT_BRACE)) return block
     //< parse-block
+    if (matches(BREAK))
+      return breakStatement
     expressionStatement
 
   //< Statements and State parse-statement
   //> Control Flow for-statement
-  private def forStatement: Stmt =
+  private def forStatement: Stmt = try {
     consume(LEFT_PAREN, "Expect '(' after 'for'.")
     /* Control Flow for-statement < Control Flow for-initializer
         // More here...
@@ -163,6 +166,7 @@ class Parser( //< parse-error
     //< for-desugar-initializer
     body
     //< for-body
+  } finally loopDepth -= 1
 
   //< Control Flow for-statement
   //> Control Flow if-statement
@@ -203,12 +207,14 @@ class Parser( //< parse-error
 
   //< Statements and State parse-var-declaration
   //> Control Flow while-statement
-  private def whileStatement: Stmt.While =
+  private def whileStatement: Stmt.While = try {
+    loopDepth += 1
     consume(LEFT_PAREN, "Expect '(' after 'while'.")
     val condition = expression
     consume(RIGHT_PAREN, "Expect ')' after condition.")
     val body = statement
     new Stmt.While(condition, body)
+  } finally loopDepth -= 1
 
   //< Control Flow while-statement
   //> Statements and State parse-expression-statement
@@ -234,17 +240,22 @@ class Parser( //< parse-error
     //< parse-parameters
     //> parse-body
     consume(LEFT_BRACE, "Expect '{' before " + kind + " body.")
-    val body = block
-    new Stmt.Function(name, parameters.toList, body)
-    //< parse-body
+    new Stmt.Function(name, parameters.toList, block)
+  //< parse-body
 
   //< Functions parse-function
   //> Statements and State block
-  private def block: List[Stmt] =
+  private def block: Stmt.Block =
     val statements = new ListBuffer[Stmt]
     while (!check(RIGHT_BRACE) && !isAtEnd) statements += declaration
     consume(RIGHT_BRACE, "Expect '}' after block.")
-    statements.toList
+    Stmt.Block(statements.toList)
+
+  private def breakStatement: Stmt.Break =
+    if loopDepth == 0 then
+      error(previous, "Must be inside a loop to use 'break'.");
+    consume(SEMICOLON, "Expect ';' after 'break'.");
+    Stmt.Break();
 
   //< Statements and State block
   //> Statements and State parse-assignment
@@ -358,13 +369,13 @@ class Parser( //< parse-error
     */
     //> Functions unary-call
     call
-    //< Functions unary-call
+  //< Functions unary-call
 
   //< unary
   //> Functions finish-call
   private def finishCall(callee: Expr): Expr.Call =
     val arguments = new ListBuffer[Expr]
-    if (!check(RIGHT_PAREN)) then
+    if !check(RIGHT_PAREN) then
       while
         //> check-max-arity
         if (arguments.size >= 255) error(peek, "Can't have more than 255 arguments.")
@@ -385,8 +396,7 @@ class Parser( //< parse-error
       else if (matches(DOT)) {
         val name = consume(IDENTIFIER, "Expect property name after '.'.")
         expr = new Expr.Get(expr, name)
-      }
-      else flag = false
+      } else flag = false
     expr
 
   //< Functions call
@@ -417,7 +427,7 @@ class Parser( //< parse-error
     }
     //> primary-error
     throw error(peek, "Expect expression.")
-    //< primary-error
+  //< primary-error
 
   //< primary
   //> match

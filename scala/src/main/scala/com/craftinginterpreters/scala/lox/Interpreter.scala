@@ -16,20 +16,20 @@ import scala.collection.mutable
 class Interpreter implements Expr.Visitor<Object> {
 */
 //> Statements and State interpreter
-//< Statements and State environment-field
+//< Statements and State env-field
 //> Functions interpreter-constructor
 //< Resolving and Binding locals-field
-//> Statements and State environment-field
+//> Statements and State env-field
 class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   //< Statements and State interpreter
-  /* Statements and State environment-field < Functions global-environment
-    private Environment environment = new Environment();
+  /* Statements and State env-field < Functions global-env
+    private Environment env = new Environment();
   */
-  //> Functions global-environment
+  //> Functions global-env
   private final val globals = new Environment()
-  private var environment = globals
-  //< Functions global-environment
+  private var env = globals
+  //< Functions global-env
   //> Resolving and Binding locals-field
   final private val locals = new mutable.HashMap[Expr, Int]()
 
@@ -37,7 +37,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
     override def arity = 0
 
     override def call(interpreter: Interpreter, arguments: List[Any]): Double =
-      System.currentTimeMillis / 1000.0
+      System.nanoTime() / 1000000.0
 
     override def toString = "<native fn>"
   })
@@ -66,31 +66,35 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   //> evaluate
   private def evaluate(expr: Expr): Any = expr.accept(this)
 
-  //< evaluate
-  //> Statements and State execute
-  private def execute(stmt: Stmt): Any =
-    stmt.accept(this)
-
   //< Statements and State execute
   //> Resolving and Binding resolve
   def resolve(expr: Expr, depth: Int): Unit =
     locals.put(expr, depth)
 
+  //< evaluate
+  //> Statements and State execute
+  private def execute(stmt: Stmt): Any =
+    stmt.accept(this)
+
+  def execute(stmt: Stmt, env: Environment): Any =
+    this.env = env
+    execute(stmt)
+
   //< Resolving and Binding resolve
   //> Statements and State execute-block
-  def executeBlock(statements: List[Stmt], environment: Environment): Unit =
-    val previous = this.environment
+  private def executeBlock(stmts: List[Stmt], env: Environment): Unit =
+    val previous = this.env
     try {
-      this.environment = environment
-      for (statement <- statements) {
+      this.env = env
+      for (statement <- stmts) {
         execute(statement)
       }
-    } finally this.environment = previous
+    } finally this.env = previous
 
   //< Statements and State execute-block
   //> Statements and State visit-block
   override def visitBlockStmt(stmt: Stmt.Block): Unit =
-    executeBlock(stmt.statements, new Environment(environment))
+    executeBlock(stmt.statements, new Environment(env))
 
   //< Statements and State visit-block
   //> Classes interpreter-visit-class
@@ -103,21 +107,21 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
         throw new RuntimeError(stmt.superclass.name, "Superclass must be a class.")
     }
     //< Inheritance interpret-superclass
-    environment.define(stmt.name.lexeme, null)
-    //> Inheritance begin-superclass-environment
+    env.define(stmt.name.lexeme, null)
+    //> Inheritance begin-superclass-env
     if (stmt.superclass != null) {
-      environment = new Environment(environment)
-      environment.define("super", superclass)
+      env = new Environment(env)
+      env.define("super", superclass)
     }
-    //< Inheritance begin-superclass-environment
+    //< Inheritance begin-superclass-env
     //> interpret-methods
     val methods = new mutable.HashMap[String, LoxFunction]
     for (method <- stmt.methods) {
       /* Classes interpret-methods < Classes interpreter-method-initializer
-            LoxFunction function = new LoxFunction(method, environment);
+            LoxFunction function = new LoxFunction(method, env);
       */
       //> interpreter-method-initializer
-      val function = new LoxFunction(method, environment, method.name.lexeme.equals("init"))
+      val function = new LoxFunction(method, env, method.name.lexeme.equals("init"))
       //< interpreter-method-initializer
       methods.put(method.name.lexeme, function)
     }
@@ -126,15 +130,15 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
     */
     //> Inheritance interpreter-construct-class
     val klass = new LoxClass(stmt.name.lexeme, superclass.asInstanceOf[LoxClass], methods.toMap)
-    //> end-superclass-environment
-    if (superclass != null) environment = environment.enclosing
-    //< end-superclass-environment
+    //> end-superclass-env
+    if (superclass != null) env = env.enclosing
+    //< end-superclass-env
     //< Inheritance interpreter-construct-class
     //< interpret-methods
     /* Classes interpreter-visit-class < Classes interpret-methods
         LoxClass klass = new LoxClass(stmt.name.lexeme);
     */
-    environment.assign(stmt.name, klass)
+    env.assign(stmt.name, klass)
 
   //< Classes interpreter-visit-class
   //> Statements and State visit-expression-stmt
@@ -148,12 +152,12 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
         LoxFunction function = new LoxFunction(stmt);
     */
     /* Functions visit-closure < Classes construct-function
-        LoxFunction function = new LoxFunction(stmt, environment);
+        LoxFunction function = new LoxFunction(stmt, env);
     */
     //> Classes construct-function
-    val function = new LoxFunction(stmt, environment, false)
+    val function = new LoxFunction(stmt, env, false)
     //< Classes construct-function
-    environment.define(stmt.name.lexeme, function)
+    env.define(stmt.name.lexeme, function)
 
   //< Functions visit-function
   //> Control Flow visit-if
@@ -179,23 +183,25 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   override def visitVarStmt(stmt: Stmt.Var): Unit =
     var value: Any = Token.dummy
     if (stmt.initializer != null) value = evaluate(stmt.initializer)
-    environment.define(stmt.name.lexeme, value)
+    env.define(stmt.name.lexeme, value)
 
   //< Statements and State visit-var
   //> Control Flow visit-while
-  override def visitWhileStmt(stmt: Stmt.While): Unit =
+  override def visitWhileStmt(stmt: Stmt.While): Unit = try {
     while (isTruthy(evaluate(stmt.condition))) execute(stmt.body)
+  } catch
+    case _: LoopBreakerException => // ignored
 
   //< Control Flow visit-while
   //> Statements and State visit-assign
   override def visitAssignExpr(expr: Expr.Assign): Any =
     val value = evaluate(expr.value)
     /* Statements and State visit-assign < Resolving and Binding resolved-assign
-        environment.assign(expr.name, value);
+        env.assign(expr.name, value);
     */
     //> Resolving and Binding resolved-assign
     locals.get(expr) match
-      case Some(distance) => environment.assignAt(distance, expr.name, value)
+      case Some(distance) => env.assignAt(distance, expr.name, value)
       case None => globals.assign(expr.name, value)
     //< Resolving and Binding resolved-assign
     value
@@ -317,9 +323,9 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   //> Inheritance interpreter-visit-super
   override def visitSuperExpr(expr: Expr.Super): Any =
     val distance = locals(expr)
-    val superclass = environment.getAt(distance, "super").asInstanceOf[LoxClass]
+    val superclass = env.getAt(distance, "super").asInstanceOf[LoxClass]
     //> super-find-this
-    val obj = environment.getAt(distance - 1, "this").asInstanceOf[LoxInstance]
+    val obj = env.getAt(distance - 1, "this").asInstanceOf[LoxInstance]
     //< super-find-this
     //> super-find-method
     val method = superclass.findMethod(expr.method.lexeme)
@@ -354,16 +360,17 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   //> Statements and State visit-variable
   override def visitVariableExpr(expr: Expr.Variable): Any =
     /* Statements and State visit-variable < Resolving and Binding call-look-up-variable
-        return environment.get(expr.name);
+        return env.get(expr.name);
     */
     //> Resolving and Binding call-look-up-variable
+    // TODO: enable global variable definition
     lookUpVariable(expr.name, expr)
   //< Resolving and Binding call-look-up-variable
 
   //> Resolving and Binding look-up-variable
   private def lookUpVariable(name: Token, expr: Expr): Any =
     val opt = locals.get(expr) match
-      case Some(distance) => environment.getAt(distance, name.lexeme)
+      case Some(distance) => env.getAt(distance, name.lexeme)
       case None => globals.get(name)
     opt match
       case Some(v) =>
@@ -407,6 +414,8 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
     if isTruthy(evaluate(expr.condition)) then
       evaluate(expr.positiveExpression)
     else evaluate(expr.negativeExpression)
+
+  override def visitBreakStmt(stmt: Stmt.Break): Any = throw new LoopBreakerException
 //< stringify
 
 object Interpreter:

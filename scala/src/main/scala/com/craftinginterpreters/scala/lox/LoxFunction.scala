@@ -1,7 +1,5 @@
 package com.craftinginterpreters.scala.lox
 
-import java.util
-
 
 class LoxFunction(
   private val declaration: Stmt.Function, //> closure-field
@@ -45,17 +43,14 @@ class LoxFunction(
     //> call-closure
     val environment = new Environment(closure)
     //< call-closure
-    var i = 0
-    while (i < declaration.params.size) {
+    for (i <- declaration.params.indices) {
       environment.define(declaration.params(i).lexeme, arguments(i))
-
-      i += 1
     }
     /* Functions function-call < Functions catch-return
         interpreter.executeBlock(declaration.body, environment);
     */
     //> catch-return
-    try interpreter.executeBlock(declaration.body, environment)
+    try interpreter.execute(declaration.body, environment)
     catch {
       case returnValue: Return =>
 

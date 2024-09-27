@@ -41,7 +41,8 @@ statement      → exprStmt
                | printStmt
                | returnStmt
                | whileStmt
-               | block ;
+               | block
+               | break ;
 
 exprStmt       → expression ";" ;
 forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
@@ -53,6 +54,7 @@ printStmt      → "print" expression ";" ;
 returnStmt     → "return" expression? ";" ;
 whileStmt      → "while" "(" expression ")" statement ;
 block          → "{" declaration* "}" ;
+break          → "break" ";" ;
 ```
 
 Note that `block` is a statement rule, but is also used as a nonterminal in a
