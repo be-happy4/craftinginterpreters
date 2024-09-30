@@ -33,8 +33,9 @@ lazy val scala = (project in file("scala"))
     name := "scala",
     libraryDependencies ++= List(
       "org.scalatest" %% "scalatest" % "3.2.19" % Test,
-      "org.scalameta" %% "munit" % "1.0.1" % Test,
+      "org.scalameta" %% "munit" % "1.0.2" % Test,
       "org.scalameta" %% "munit-scalacheck" % "1.0.0" % Test,
+      "org.scala-lang" %% "toolkit" % "0.5.0"
     )
   )
 

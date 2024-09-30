@@ -29,7 +29,6 @@ object Stmt:
     def visitReturnStmt(stmt: Stmt.Return): R
     def visitVarStmt(stmt: Stmt.Var): R
     def visitWhileStmt(stmt: Stmt.While): R
-
     def visitBreakStmt(stmt: Stmt.Break): R
 
 // Nested Stmt classes here...
@@ -46,10 +45,7 @@ object Stmt:
   class Expression(val expression: Expr) extends Stmt
 //< stmt-expression
 //> stmt-function
-  class Function(
-    val name: Token,
-    val params: List[Token],
-  val body: Stmt) extends Stmt
+  class Function(val name: Token, val function: Expr.Function) extends Stmt
 //< stmt-function
 //> stmt-if
   class If(
@@ -70,7 +66,7 @@ object Stmt:
   class While(val condition: Expr, val body: Stmt) extends Stmt
 //< stmt-while
 //> stmt-break
-class Break extends Stmt
+  class Break extends Stmt
 //< stmt-break
 
 //< Appendix II stmt

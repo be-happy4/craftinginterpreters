@@ -61,6 +61,7 @@ object GenerateAst {
       //> Statements and State var-expr
       "Comma    : Expr left, Expr right",
       "Ternary  : Expr condition, Expr positiveExpression, Expr negativeExpression",
+      "Function : List<Token> params, Stmt body",
     ))
     //> Statements and State stmt-ast
     defineAst(outputDir, "Stmt", List( //> block-ast
@@ -71,7 +72,7 @@ object GenerateAst {
       //> Inheritance superclass-ast
       "Class      : Token name, Expr.Variable superclass, List<Stmt.Function> methods", //< Inheritance superclass-ast
       "Expression : Expr expression", //> Functions function-ast
-      "Function   : Token name, List<Token> params, Stmt body", //< Functions function-ast
+      "Function   : Token name, Expr.Function function", //< Functions function-ast
       //> Control Flow if-ast
       "If         : Expr condition, Stmt thenBranch, Stmt elseBranch", //< Control Flow if-ast
       /* Statements and State stmt-ast < Statements and State var-stmt-ast

@@ -74,7 +74,10 @@ class Parser( //< parse-error
     if (matches(CLASS)) return classDeclaration
     //< Classes match-class
     //> Functions match-fun
-    if (matches(FUN)) return function("function")
+    if (check(FUN) && checkNext(IDENTIFIER)) {
+      consume(FUN, null)
+      return function("function")
+    }
     //< Functions match-fun
     if (matches(VAR)) return varDeclaration
     statement
@@ -125,8 +128,7 @@ class Parser( //< parse-error
     //> parse-block
     if (matches(LEFT_BRACE)) return block
     //< parse-block
-    if (matches(BREAK))
-      return breakStatement
+    if (matches(BREAK)) return breakStatement
     expressionStatement
 
   //< Statements and State parse-statement
@@ -227,21 +229,24 @@ class Parser( //< parse-error
   //> Functions parse-function
   private def function(kind: String): Stmt.Function =
     val name = consume(IDENTIFIER, "Expect " + kind + " name.")
+    new Stmt.Function(name, functionBody(kind))
+  //< parse-body
+
+  def functionBody(kind: String): Expr.Function =
     //> parse-parameters
     consume(LEFT_PAREN, "Expect '(' after " + kind + " name.")
-    val parameters = new ListBuffer[Token]
+    val params = new ListBuffer[Token]
     if (!check(RIGHT_PAREN)) then
       while
-        if (parameters.size >= 255) error(peek, "Can't have more than 255 parameters.")
-        parameters += consume(IDENTIFIER, "Expect parameter name.")
+        if (params.size >= 255) error(peek, "Can't have more than 255 parameters.")
+        params += consume(IDENTIFIER, "Expect parameter name.")
         matches(COMMA)
       do ()
     consume(RIGHT_PAREN, "Expect ')' after parameters.")
     //< parse-parameters
     //> parse-body
     consume(LEFT_BRACE, "Expect '{' before " + kind + " body.")
-    new Stmt.Function(name, parameters.toList, block)
-  //< parse-body
+    Expr.Function(params.toList, block)
 
   //< Functions parse-function
   //> Statements and State block
@@ -425,6 +430,7 @@ class Parser( //< parse-error
       consume(RIGHT_PAREN, "Expect ')' after expression.")
       return new Expr.Grouping(expr)
     }
+    if (matches(FUN)) return functionBody("function")
     //> primary-error
     throw error(peek, "Expect expression.")
   //< primary-error
@@ -453,9 +459,14 @@ class Parser( //< parse-error
     if (isAtEnd) return false
     peek.typ eq typ
 
+  private def checkNext(tokenType: TokenType): Boolean =
+    if (isAtEnd) return false
+    if (tokens(current + 1).typ == EOF) return false
+    tokens(current + 1).typ == tokenType
+    
   //< check
   //> advance
-  private def advance: Token =
+  private def advance =
     if (!isAtEnd) current += 1
     previous
 

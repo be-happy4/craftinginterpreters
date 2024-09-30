@@ -369,6 +369,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   //> Resolving and Binding look-up-variable
   private def lookUpVariable(name: Token, expr: Expr): Any =
+
     val opt = locals.get(expr) match
       case Some(distance) => env.getAt(distance, name.lexeme)
       case None => globals.get(name)
@@ -416,6 +417,8 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
     else evaluate(expr.negativeExpression)
 
   override def visitBreakStmt(stmt: Stmt.Break): Any = throw new LoopBreakerException
+
+  override def visitFunctionExpr(expr: Expr.Function): Any = ???
 //< stringify
 
 object Interpreter:

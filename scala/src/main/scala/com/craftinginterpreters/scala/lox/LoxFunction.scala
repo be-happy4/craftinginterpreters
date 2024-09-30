@@ -32,7 +32,7 @@ class LoxFunction(
 
   //< function-to-string
   //> function-arity
-  override def arity: Int = declaration.params.size
+  override def arity: Int = declaration.function.params.size
 
   //< function-arity
   //> function-call
@@ -43,14 +43,14 @@ class LoxFunction(
     //> call-closure
     val environment = new Environment(closure)
     //< call-closure
-    for (i <- declaration.params.indices) {
-      environment.define(declaration.params(i).lexeme, arguments(i))
+    for (i <- declaration.function.params.indices) {
+      environment.define(declaration.function.params(i).lexeme, arguments(i))
     }
     /* Functions function-call < Functions catch-return
         interpreter.executeBlock(declaration.body, environment);
     */
     //> catch-return
-    try interpreter.execute(declaration.body, environment)
+    try interpreter.execute(declaration.function.body, environment)
     catch {
       case returnValue: Return =>
 

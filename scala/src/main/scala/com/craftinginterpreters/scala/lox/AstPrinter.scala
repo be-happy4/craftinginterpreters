@@ -54,16 +54,12 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
   //< Statements and State omit
   //> Functions omit
   override def visitFunctionStmt(stmt: Stmt.Function): String = {
-    val builder = new StringBuilder
-    builder.append("(fun " + stmt.name.lexeme + "(")
-    for (param <- stmt.params) {
-      if (param ne stmt.params.head) builder.append(" ")
-      builder.append(param.lexeme)
-    }
-    builder.append(") ")
-    builder.append(stmt.body.accept(this))
-    builder.append(")")
-    builder.toString
+    s"""
+       |(fun ${stmt.name.lexeme}
+       |(${stmt.function.params.map(_.lexeme).mkString(" ")}) 
+       |${stmt.function.body.accept(this)})"""
+      .stripMargin
+      .replace("\n", "")
   }
 
   //< Functions omit
@@ -184,6 +180,8 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
     }
 
   override def visitBreakStmt(stmt: Stmt.Break): String = "break"
+
+  override def visitFunctionExpr(expr: Expr.Function): String = ???
 
 object AstPrinter:
   //< omit

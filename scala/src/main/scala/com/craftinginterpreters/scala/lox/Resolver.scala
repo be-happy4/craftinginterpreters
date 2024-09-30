@@ -90,7 +90,7 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
       //> resolver-initializer-type
       if (method.name.lexeme.equals("init")) declaration = Resolver.FunctionType.INITIALIZER
       //< resolver-initializer-type
-      resolveFunction(method, declaration) // [local]
+      resolveFunction(method.function, declaration) // [local]
 
     }
     //> resolver-end-this-scope
@@ -118,7 +118,7 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
         resolveFunction(stmt);
     */
     //> pass-function-type
-    resolveFunction(stmt, Resolver.FunctionType.FUNCTION)
+    resolveFunction(stmt.function, Resolver.FunctionType.FUNCTION)
   //< pass-function-type
 
   //< visit-function-stmt
@@ -249,6 +249,9 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
     resolve(expr.positiveExpression)
     resolve(expr.negativeExpression)
 
+  override def visitFunctionExpr(expr: Expr.Function): Unit =
+    resolveFunction(expr, Resolver.FunctionType.FUNCTION)
+  
   //< visit-variable-expr
   //> resolve-stmt
   private def resolve(stmt: Stmt): Unit =
@@ -265,7 +268,7 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
     private void resolveFunction(Stmt.Function function) {
   */
   //> set-current-function
-  private def resolveFunction(function: Stmt.Function, typ: Resolver.FunctionType): Unit =
+  private def resolveFunction(function: Expr.Function, typ: Resolver.FunctionType): Unit =
     val enclosingFunction = currentFunction
     currentFunction = typ
     //< set-current-function
