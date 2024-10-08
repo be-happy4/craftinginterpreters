@@ -49,7 +49,8 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
 
   //< Classes omit
   //> Statements and State omit
-  override def visitExpressionStmt(stmt: Stmt.Expression): String = parenthesize(";", stmt.expression)
+  override def visitExprStmt(stmt: Expr): String = 
+    parenthesize(";", stmt)
 
   //< Statements and State omit
   //> Functions omit
@@ -178,7 +179,9 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
         case _ => builder.append(part)
     }
 
-  override def visitBreakStmt(stmt: Stmt.Break): String = "break"
+  override def visitBreakStmt(stmt: Stmt.Break.type): String = "break"
+  
+  override def visitEmptyStmt(stmt: Stmt.Empty.type): String = ""
 
   override def visitFunctionExpr(expr: Expr.Function): String =
     s"""

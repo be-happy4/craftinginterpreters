@@ -52,12 +52,10 @@ object Lox:
       print("> ")
       val line = reader.readLine
       if line != null then
-        run(line) match
-          case results: List[_] => results.foreach {
-            case () =>
-            case v => println(Interpreter.stringify(v))
-          }
-          case _ =>
+        run(line).foreach {
+          case () =>
+          case v => println(Interpreter.stringify(v))
+        }
         true
       else false
     do
@@ -66,7 +64,7 @@ object Lox:
 
   //< prompt
   //> run
-  private def run(source: String): Any =
+  private def run(source: String): List[Any] =
     val scanner = new Scanner(source)
     val tokens = scanner.scanTokens
     /* Scanning run < Parsing Expressions print-ast
@@ -85,14 +83,14 @@ object Lox:
     val statements = parser.parse
     //< Statements and State parse-statements
     // Stop if there was a syntax error.
-    if (hadError) return ()
+    if (hadError) return List.empty
     //< Parsing Expressions print-ast
     //> Resolving and Binding create-resolver
     val resolver = new Resolver(interpreter)
     resolver.resolve(statements)
     //> resolution-error
     // Stop if there was a resolution error.
-    if (hadError) return ()
+    if (hadError) return List.empty
     //< resolution-error
     //< Resolving and Binding create-resolver
     /* Parsing Expressions print-ast < Evaluating Expressions interpreter-interpret

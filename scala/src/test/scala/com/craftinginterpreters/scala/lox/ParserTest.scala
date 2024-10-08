@@ -29,55 +29,67 @@ class ParserTest extends ScannerTest:
 
   test("test logical operator for parser"):
     val expected = List(
-      Stmt.Expression(
+      Expr.Logical(
+        Expr.Logical(Expr.Literal(1), Token(TokenType.AND), Expr.Literal(2)),
+        Token(TokenType.OR),
+        Expr.Logical(Expr.Literal(3), Token(TokenType.AND), Expr.Literal(4)),
+      ),
+      Expr.Logical(
         Expr.Logical(
-          Expr.Logical(Expr.Literal(1), Token(TokenType.AND), Expr.Literal(2)),
+          Expr.Literal(5),
           Token(TokenType.OR),
-          Expr.Logical(Expr.Literal(3), Token(TokenType.AND), Expr.Literal(4)),
-        )),
-      Stmt.Expression(
+          Expr.Logical(
+            Expr.Literal(6),
+            Token(TokenType.AND),
+            Expr.Literal(7))),
+        Token(TokenType.OR),
+        Expr.Literal(8)),
+      Expr.Logical(
         Expr.Logical(
           Expr.Logical(
-            Expr.Literal(5),
+            Expr.Logical(
+              Expr.Literal(1),
+              Token(TokenType.OR),
+              Expr.Literal(2)),
             Token(TokenType.OR),
             Expr.Logical(
-              Expr.Literal(6),
+              Expr.Literal(3),
               Token(TokenType.AND),
-              Expr.Literal(7))),
+              Expr.Literal(4))),
           Token(TokenType.OR),
-          Expr.Literal(8)))
+          Expr.Literal(5)),
+        Token(TokenType.OR),
+        Expr.Literal(6)),
     )
     expected.map(ParserTest.printer.print).foreach(println)
     assertASTs(statements("logical_operator", "mixed"), expected)
 
   test("test ternary expression for parser"):
     val expected = List(
-      Stmt.Expression(
+      Expr.Ternary(
+        Expr.Logical(
+          Expr.Literal(1),
+          Token(EQUAL_EQUAL),
+          Expr.Literal(2)
+        ),
+        Expr.Literal(3),
+        Expr.Literal(4)
+      ),
+      Expr.Ternary(
+        Expr.Logical(
+          Expr.Literal(1),
+          Token(LESS),
+          Expr.Literal(2)
+        ),
         Expr.Ternary(
           Expr.Logical(
-            Expr.Literal(1),
-            Token(EQUAL_EQUAL),
-            Expr.Literal(2)
+            Expr.Literal(3),
+            Token(GREATER),
+            Expr.Literal(4)
           ),
-          Expr.Literal(3),
-          Expr.Literal(4)
-        )),
-      Stmt.Expression(
-        Expr.Ternary(
-          Expr.Logical(
-            Expr.Literal(1),
-            Token(LESS),
-            Expr.Literal(2)
-          ),
-          Expr.Ternary(
-            Expr.Logical(
-              Expr.Literal(3),
-              Token(GREATER),
-              Expr.Literal(4)
-            ),
-            Expr.Literal(5),
-            Expr.Literal(6),
-          ),
-          Expr.Literal(7))))
+          Expr.Literal(5),
+          Expr.Literal(6),
+        ),
+        Expr.Literal(7)))
     expected.map(ParserTest.printer.print).foreach(println)
     assertASTs(statements("ternary", "ternary"), expected)

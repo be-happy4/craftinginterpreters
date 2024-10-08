@@ -54,12 +54,13 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
     }
   */
   //> Statements and State interpret
-  def interpret(statements: List[Stmt]): Any =
+  def interpret(statements: List[Stmt]): List[Any] =
     try {
       statements.map(execute)
     } catch {
       case error: RuntimeError =>
         Lox.runtimeError(error)
+        List.empty
     }
 
   //< Statements and State interpret
@@ -142,8 +143,8 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   //< Classes interpreter-visit-class
   //> Statements and State visit-expression-stmt
-  override def visitExpressionStmt(stmt: Stmt.Expression): Any =
-    evaluate(stmt.expression)
+  override def visitExprStmt(stmt: Expr): Any =
+    evaluate(stmt)
 
   //< Statements and State visit-expression-stmt
   //> Functions visit-function
@@ -416,7 +417,10 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
       evaluate(expr.positiveExpression)
     else evaluate(expr.negativeExpression)
 
-  override def visitBreakStmt(stmt: Stmt.Break): Any = throw new LoopBreakerException
+  override def visitBreakStmt(stmt: Stmt.Break.type): Any =
+    throw new LoopBreakerException
+
+  override def visitEmptyStmt(stmt: Stmt.Empty.type): Any = {}
 
   override def visitFunctionExpr(expr: Expr.Function): Any =
     new LoxFunction(null, expr, env, false)

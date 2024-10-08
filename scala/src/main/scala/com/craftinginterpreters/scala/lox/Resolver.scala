@@ -118,8 +118,8 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
 
   //< Classes resolver-visit-class
   //> visit-expression-stmt
-  override def visitExpressionStmt(stmt: Stmt.Expression): Unit =
-    resolve(stmt.expression)
+  override def visitExprStmt(stmt: Expr): Unit =
+    resolve(stmt)
 
   //< visit-expression-stmt
   //> visit-function-stmt
@@ -172,7 +172,9 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
     resolve(stmt.condition)
     resolve(stmt.body)
 
-  override def visitBreakStmt(stmt: Stmt.Break): Unit = {}
+  override def visitBreakStmt(stmt: Stmt.Break.type): Unit = {}
+
+  override def visitEmptyStmt(stmt: Stmt.Empty.type): Unit = {}
 
   //< visit-while-stmt
   //> visit-assign-expr

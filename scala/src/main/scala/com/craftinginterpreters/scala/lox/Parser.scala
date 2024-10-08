@@ -129,6 +129,7 @@ class Parser( //< parse-error
     if (matches(LEFT_BRACE)) return block
     //< parse-block
     if (matches(BREAK)) return breakStatement
+    if (matches(SEMICOLON)) return Stmt.Empty
     expressionStatement
 
   //< Statements and State parse-statement
@@ -157,7 +158,7 @@ class Parser( //< parse-error
     //> for-body
     var body = statement
     //> for-desugar-increment
-    if (increment != null) body = new Stmt.Block(List(body, new Stmt.Expression(increment)))
+    if (increment != null) body = new Stmt.Block(List(body, increment))
     //< for-desugar-increment
     //> for-desugar-condition
     if (condition == null) condition = new Expr.Literal(true)
@@ -220,10 +221,10 @@ class Parser( //< parse-error
 
   //< Control Flow while-statement
   //> Statements and State parse-expression-statement
-  private def expressionStatement: Stmt.Expression =
+  private def expressionStatement: Expr =
     val expr = expression
     consume(SEMICOLON, "Expect ';' after expression.")
-    new Stmt.Expression(expr)
+    expr
 
   //< Statements and State parse-expression-statement
   //> Functions parse-function
@@ -256,11 +257,11 @@ class Parser( //< parse-error
     consume(RIGHT_BRACE, "Expect '}' after block.")
     Stmt.Block(statements.toList)
 
-  private def breakStatement: Stmt.Break =
+  private def breakStatement: Stmt.Break.type =
     if loopDepth == 0 then
-      error(previous, "Must be inside a loop to use 'break'.");
-    consume(SEMICOLON, "Expect ';' after 'break'.");
-    Stmt.Break();
+      error(previous, "Must be inside a loop to use 'break'.")
+    consume(SEMICOLON, "Expect ';' after 'break'.")
+    Stmt.Break
 
   //< Statements and State block
   //> Statements and State parse-assignment
