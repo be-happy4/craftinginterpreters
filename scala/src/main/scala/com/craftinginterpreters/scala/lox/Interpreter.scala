@@ -66,11 +66,6 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   //> evaluate
   private def evaluate(expr: Expr): Any = expr.accept(this)
 
-  //< Statements and State execute
-  //> Resolving and Binding resolve
-  def resolve(expr: Expr, depth: Int): Unit =
-    locals.put(expr, depth)
-
   //< evaluate
   //> Statements and State execute
   private def execute(stmt: Stmt): Any =
@@ -79,6 +74,11 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   def execute(stmt: Stmt, env: Environment): Any =
     this.env = env
     execute(stmt)
+
+  //< Statements and State execute
+  //> Resolving and Binding resolve
+  def resolve(expr: Expr, depth: Int): Unit =
+    locals(expr) = depth
 
   //< Resolving and Binding resolve
   //> Statements and State execute-block
@@ -121,7 +121,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
             LoxFunction function = new LoxFunction(method, env);
       */
       //> interpreter-method-initializer
-      val function = new LoxFunction(method, env, method.name.lexeme.equals("init"))
+      val function = new LoxFunction(method.name.lexeme, method.function, env, method.name.lexeme.equals("init"))
       //< interpreter-method-initializer
       methods.put(method.name.lexeme, function)
     }
@@ -155,7 +155,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
         LoxFunction function = new LoxFunction(stmt, env);
     */
     //> Classes construct-function
-    val function = new LoxFunction(stmt, env, false)
+    val function = new LoxFunction(stmt.name.lexeme, stmt.function, env, false)
     //< Classes construct-function
     env.define(stmt.name.lexeme, function)
 
@@ -363,7 +363,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
         return env.get(expr.name);
     */
     //> Resolving and Binding call-look-up-variable
-    // TODO: enable global variable definition
+    // FIXME: solve global variable definition
     lookUpVariable(expr.name, expr)
   //< Resolving and Binding call-look-up-variable
 
@@ -407,9 +407,9 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   private def isEqual(a: Any, b: Any): Boolean =
     if a == null then b == null else a.equals(b)
 
-  override def visitCommaExpr(expr: Expr.Comma): Any =
-    evaluate(expr.left)
-    evaluate(expr.right)
+//  override def visitCommaExpr(expr: Expr.Comma): Any =
+//    evaluate(expr.left)
+//    evaluate(expr.right)
 
   override def visitTernaryExpr(expr: Expr.Ternary): Any =
     if isTruthy(evaluate(expr.condition)) then
@@ -418,7 +418,8 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   override def visitBreakStmt(stmt: Stmt.Break): Any = throw new LoopBreakerException
 
-  override def visitFunctionExpr(expr: Expr.Function): Any = ???
+  override def visitFunctionExpr(expr: Expr.Function): Any =
+    new LoxFunction(null, expr, env, false)
 //< stringify
 
 object Interpreter:

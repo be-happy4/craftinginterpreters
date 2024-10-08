@@ -57,15 +57,15 @@ class Parser( //< parse-error
         return equality();
     */
     //> Statements and State expression
-    comma
+    assignment
   //< Statements and State expression
 
-  private def comma: Expr =
-    val expr = assignment
-    if (matches(COMMA))
-      Expr.Comma(expr, comma)
-    else expr
-  //< Statements and State expression
+//  private def comma: Expr =
+//    val expr = assignment
+//    if (matches(COMMA))
+//      Expr.Comma(expr, comma)
+//    else expr
+//  //< Statements and State expression
 
   //< expression
   //> Statements and State declaration

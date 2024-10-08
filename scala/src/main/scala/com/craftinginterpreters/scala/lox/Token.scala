@@ -18,4 +18,6 @@ class Token(
 
 object Token:
   final val dummy = new Object()
+  final val THIS = new Token(TokenType.THIS, TokenType.THIS.key)
+  final val SUPER = new Token(TokenType.SUPER, TokenType.SUPER.key)
 

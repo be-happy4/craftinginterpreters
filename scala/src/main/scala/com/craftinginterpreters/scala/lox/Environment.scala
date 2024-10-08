@@ -46,7 +46,7 @@ class Environment: //> environment-constructors
 
   //< environment-define
   //> Resolving and Binding ancestor
-  def ancestor(distance: Int) =
+  def ancestor(distance: Int): Environment =
     var environment = this
     for (_ <- 0 until distance) {
       environment = environment.enclosing // [coupled]

@@ -31,7 +31,7 @@ public class Lox {
     }
   }
 //> run-file
-  private static void runFile(String path) throws IOException {
+  public static void runFile(String path) throws IOException {
     byte[] bytes = Files.readAllBytes(Paths.get(path));
     run(new String(bytes, Charset.defaultCharset()));
 //> exit-code
@@ -45,7 +45,7 @@ public class Lox {
   }
 //< run-file
 //> prompt
-  private static void runPrompt() throws IOException {
+  public static void runPrompt() throws IOException {
     InputStreamReader input = new InputStreamReader(System.in);
     BufferedReader reader = new BufferedReader(input);
 
@@ -61,7 +61,7 @@ public class Lox {
   }
 //< prompt
 //> run
-  private static void run(String source) {
+  public static void run(String source) {
     Scanner scanner = new Scanner(source);
     List<Token> tokens = scanner.scanTokens();
 /* Scanning run < Parsing Expressions print-ast

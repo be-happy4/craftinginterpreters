@@ -53,14 +53,13 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
 
   //< Statements and State omit
   //> Functions omit
-  override def visitFunctionStmt(stmt: Stmt.Function): String = {
+  override def visitFunctionStmt(stmt: Stmt.Function): String =
     s"""
        |(fun ${stmt.name.lexeme}
        |(${stmt.function.params.map(_.lexeme).mkString(" ")}) 
        |${stmt.function.body.accept(this)})"""
       .stripMargin
       .replace("\n", "")
-  }
 
   //< Functions omit
   //> Control Flow omit
@@ -134,8 +133,8 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
   //> Statements and State omit
   override def visitVariableExpr(expr: Expr.Variable): String = expr.name.lexeme
 
-  override def visitCommaExpr(expr: Expr.Comma): String =
-    s"(, ${expr.left.accept(this)} ${expr.right.accept(this)})"
+//  override def visitCommaExpr(expr: Expr.Comma): String =
+//    s"(, ${expr.left.accept(this)} ${expr.right.accept(this)})"
 
   override def visitTernaryExpr(expr: Expr.Ternary): String =
     s"(${expr.condition.accept(this)} ? ${expr.positiveExpression.accept(this)} : " +
@@ -181,7 +180,13 @@ class AstPrinter extends Expr.Visitor[String] with Stmt.Visitor[String]:
 
   override def visitBreakStmt(stmt: Stmt.Break): String = "break"
 
-  override def visitFunctionExpr(expr: Expr.Function): String = ???
+  override def visitFunctionExpr(expr: Expr.Function): String =
+    s"""
+       |(lambda
+       | (${expr.params.map(_.lexeme).mkString(" ")})
+       | ${expr.body.accept(this)})"""
+      .stripMargin
+      .replace("\n", "")
 
 object AstPrinter:
   //< omit

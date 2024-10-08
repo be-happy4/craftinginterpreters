@@ -1,0 +1,7 @@
+
+fun foo(f) {
+  return f(1);
+}
+
+foo(fun(a) { print a + 1;}); // expect: 2
+print foo(fun(a) { return a + 2;}); // expect: 3

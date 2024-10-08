@@ -19,7 +19,6 @@ sealed abstract class Expr:
       case x: Expr.This => visitor.visitThisExpr(x)
       case x: Expr.Unary => visitor.visitUnaryExpr(x)
       case x: Expr.Variable => visitor.visitVariableExpr(x)
-      case x: Expr.Comma => visitor.visitCommaExpr(x)
       case x: Expr.Ternary => visitor.visitTernaryExpr(x)
       case x: Expr.Function => visitor.visitFunctionExpr(x)
 
@@ -37,9 +36,7 @@ object Expr:
     def visitThisExpr(expr: Expr.This): R
     def visitUnaryExpr(expr: Expr.Unary): R
     def visitVariableExpr(expr: Expr.Variable): R
-    def visitCommaExpr(expr: Expr.Comma): R
     def visitTernaryExpr(expr: Expr.Ternary): R
-
     def visitFunctionExpr(expr: Expr.Function): R
 
 // Nested Expr classes here...
@@ -91,9 +88,6 @@ object Expr:
 //> expr-variable
   class Variable(val name: Token) extends Expr
 //< expr-variable
-//> expr-comma
-  class Comma(val left: Expr, val right: Expr) extends Expr
-//< expr-comma
 //> expr-ternary
   class Ternary(
     val condition: Expr,

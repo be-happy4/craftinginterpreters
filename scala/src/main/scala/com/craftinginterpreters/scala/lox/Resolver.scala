@@ -1,12 +1,15 @@
 package com.craftinginterpreters.scala.lox
 
 
+import com.craftinginterpreters.scala.lox.Resolver.VariableState.{DECLARED, DEFINED}
+import com.craftinginterpreters.scala.lox.Resolver.{Variable, VariableState}
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayDeque
 
 
 object Resolver: //> function-type
-  enum FunctionType:
+  private enum FunctionType:
     case NONE
     /* Resolving and Binding function-type < Classes function-type-method
         case FUNCTION
@@ -28,11 +31,19 @@ object Resolver: //> function-type
     case SUBCLASS
 //< Inheritance class-type-subclass
 
+  enum VariableState:
+    case DECLARED
+    case DEFINED
+    case READ
+
+  private case class Variable(
+    name: Token,
+    var state: VariableState)
 
 class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   with Stmt.Visitor[Unit]:
   //> scopes-field
-  private val scopes = new mutable.ArrayDeque[mutable.HashMap[String, Boolean]]
+  private val scopes = new mutable.ArrayDeque[mutable.HashMap[String, Variable]]
   //< scopes-field
   //> function-type-field
   private var currentFunction = Resolver.FunctionType.NONE
@@ -77,13 +88,14 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
     //> Inheritance begin-super-scope
     if (stmt.superclass != null) {
       beginScope()
-      scopes.head += "super" -> true
+      Token.dummy
+      scopes.head += "super" -> Variable(Token.THIS, DEFINED)
     }
     //< Inheritance begin-super-scope
     //> resolve-methods
     //> resolver-begin-this-scope
     beginScope()
-    scopes.head += "this" -> true
+    scopes.head += "this" -> Variable(Token.SUPER, DEFINED)
     //< resolver-begin-this-scope
     for (method <- stmt.methods) {
       var declaration = Resolver.FunctionType.METHOD
@@ -119,7 +131,7 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
     */
     //> pass-function-type
     resolveFunction(stmt.function, Resolver.FunctionType.FUNCTION)
-  //< pass-function-type
+    //< pass-function-type
 
   //< visit-function-stmt
   //> visit-if-stmt
@@ -137,11 +149,12 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   //> visit-return-stmt
   override def visitReturnStmt(stmt: Stmt.Return): Unit =
     //> return-from-top
-    if (currentFunction eq Resolver.FunctionType.NONE) Lox.error(stmt.keyword, "Can't return from top-level code.")
+    if (currentFunction == Resolver.FunctionType.NONE)
+      Lox.error(stmt.keyword, "Can't return from top-level code.")
     //< return-from-top
     if (stmt.value != null) {
       //> Classes return-in-initializer
-      if (currentFunction eq Resolver.FunctionType.INITIALIZER) Lox.error(stmt.keyword, "Can't return a value from an initializer.")
+      if (currentFunction == Resolver.FunctionType.INITIALIZER) Lox.error(stmt.keyword, "Can't return a value from an initializer.")
       //< Classes return-in-initializer
       resolve(stmt.value)
     }
@@ -165,7 +178,7 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   //> visit-assign-expr
   override def visitAssignExpr(expr: Expr.Assign): Unit =
     resolve(expr.value)
-    resolveLocal(expr, expr.name)
+    resolveLocal(expr, expr.name, false)
 
   //< visit-assign-expr
   //> visit-binary-expr
@@ -211,22 +224,22 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   //> Inheritance resolve-super-expr
   override def visitSuperExpr(expr: Expr.Super): Unit =
     //> invalid-super
-    if (currentClass eq Resolver.ClassType.NONE)
+    if (currentClass == Resolver.ClassType.NONE)
       Lox.error(expr.keyword, "Can't use 'super' outside of a class.")
     else if (currentClass ne Resolver.ClassType.SUBCLASS)
       Lox.error(expr.keyword, "Can't use 'super' in a class with no superclass.")
     //< invalid-super
-    resolveLocal(expr, expr.keyword)
+    resolveLocal(expr, expr.keyword, true)
 
   //< Inheritance resolve-super-expr
   //> Classes resolver-visit-this
   override def visitThisExpr(expr: Expr.This): Unit =
     //> this-outside-of-class
-    if (currentClass eq Resolver.ClassType.NONE) then
+    if (currentClass == Resolver.ClassType.NONE) then
       Lox.error(expr.keyword, "Can't use 'this' outside of a class.")
     else
       //< this-outside-of-class
-      resolveLocal(expr, expr.keyword)
+      resolveLocal(expr, expr.keyword, true)
 
   //< Classes resolver-visit-this
   //> visit-unary-expr
@@ -236,13 +249,15 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   //< visit-unary-expr
   //> visit-variable-expr
   override def visitVariableExpr(expr: Expr.Variable): Unit =
-    if (scopes.nonEmpty && !scopes.head.getOrElse(expr.name.lexeme, false))
+    if (scopes.nonEmpty && (scopes.head.get(expr.name.lexeme) match
+      case Some(scope) => scope.state == DECLARED
+      case None => false))
       Lox.error(expr.name, "Can't read local variable in its own initializer.")
-    resolveLocal(expr, expr.name)
+    resolveLocal(expr, expr.name, true)
 
-  override def visitCommaExpr(expr: Expr.Comma): Unit =
-    resolve(expr.left)
-    resolve(expr.right)
+//  override def visitCommaExpr(expr: Expr.Comma): Unit =
+//    resolve(expr.left)
+//    resolve(expr.right)
 
   override def visitTernaryExpr(expr: Expr.Ternary): Unit =
     resolve(expr.condition)
@@ -281,17 +296,20 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
     endScope()
     //> restore-current-function
     currentFunction = enclosingFunction
-  //< restore-current-function
+    //< restore-current-function
 
   //< resolve-function
   //> begin-scope
   private def beginScope(): Unit =
-    scopes += new mutable.HashMap[String, Boolean]()
+    scopes += mutable.HashMap()
 
   //< begin-scope
   //> end-scope
   private def endScope(): Unit =
-    scopes.removeLast()
+    val scope = scopes.removeLast()
+    for ((_, variable) <- scope if variable.state == DEFINED) {
+      Lox.error(variable.name, "Local variable is not used.");
+    }
 
   //< end-scope
   //> declare
@@ -300,23 +318,27 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
     if (scopes.isEmpty) return
     val scope = scopes.head
     //> duplicate-variable
-    if (scope.getOrElse(name.lexeme, false)) Lox.error(name, "Already a variable with this name in this scope.")
+    if (scope.contains(name.lexeme))
+      Lox.error(name, "Already a variable with this name in this scope.")
     //< duplicate-variable
-    scope += name.lexeme -> false
+    scope += name.lexeme -> Variable(name, VariableState.DECLARED)
 
   //< declare
   //> define
   private def define(name: Token): Unit =
     if (scopes.isEmpty) return
-    scopes.head += name.lexeme -> true
+    scopes.head(name.lexeme).state = VariableState.DEFINED
 
   //< define
   //> resolve-local
-  private def resolveLocal(expr: Expr, name: Token): Unit =
+  private def resolveLocal(expr: Expr, name: Token, isRead: Boolean): Unit =
     var flag = true
-    for (i <- scopes.indices.reverse if flag) {
-      if (scopes(i).contains(name.lexeme)) {
+    for ((scope, i) <- scopes.view.reverse.zipWithIndex if flag) {
+      if (scope.contains(name.lexeme)) {
         interpreter.resolve(expr, scopes.size - 1 - i)
+        if (isRead) {
+          scopes(i)(name.lexeme).state = VariableState.READ;
+        }
         flag = false
       }
     }

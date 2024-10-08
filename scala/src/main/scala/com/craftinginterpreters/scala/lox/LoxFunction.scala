@@ -2,7 +2,8 @@ package com.craftinginterpreters.scala.lox
 
 
 class LoxFunction(
-  private val declaration: Stmt.Function, //> closure-field
+  val name: String,
+  private val declaration: Expr.Function, //> closure-field
   private val closure: Environment, //< closure-field
   /* Functions lox-function < Functions closure-constructor
     LoxFunction(Stmt.Function declaration) {
@@ -23,16 +24,16 @@ class LoxFunction(
         return new LoxFunction(declaration, environment);
     */
     //> lox-function-bind-with-initializer
-    new LoxFunction(declaration, environment, isInitializer)
-  //< lox-function-bind-with-initializer
+    new LoxFunction(name, declaration, environment, isInitializer)
+    //< lox-function-bind-with-initializer
 
   //< Classes bind-instance
   //> function-to-string
-  override def toString: String = "<fn " + declaration.name.lexeme + ">"
+  override def toString: String = "<fn " + name + ">"
 
   //< function-to-string
   //> function-arity
-  override def arity: Int = declaration.function.params.size
+  override def arity: Int = declaration.params.size
 
   //< function-arity
   //> function-call
@@ -43,14 +44,14 @@ class LoxFunction(
     //> call-closure
     val environment = new Environment(closure)
     //< call-closure
-    for (i <- declaration.function.params.indices) {
-      environment.define(declaration.function.params(i).lexeme, arguments(i))
+    for (i <- declaration.params.indices) {
+      environment.define(declaration.params(i).lexeme, arguments(i))
     }
     /* Functions function-call < Functions catch-return
         interpreter.executeBlock(declaration.body, environment);
     */
     //> catch-return
-    try interpreter.execute(declaration.function.body, environment)
+    try interpreter.execute(declaration.body, environment)
     catch {
       case returnValue: Return =>
 
