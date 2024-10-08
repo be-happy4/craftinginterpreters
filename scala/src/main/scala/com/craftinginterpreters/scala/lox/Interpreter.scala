@@ -72,10 +72,6 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   private def execute(stmt: Stmt): Any =
     stmt.accept(this)
 
-  def execute(stmt: Stmt, env: Environment): Any =
-    this.env = env
-    execute(stmt)
-
   //< Statements and State execute
   //> Resolving and Binding resolve
   def resolve(expr: Expr, depth: Int): Unit =
@@ -83,7 +79,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   //< Resolving and Binding resolve
   //> Statements and State execute-block
-  private def executeBlock(stmts: List[Stmt], env: Environment): Unit =
+  def executeBlock(stmts: List[Stmt], env: Environment): Unit =
     val previous = this.env
     try {
       this.env = env
@@ -182,8 +178,9 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   //< Functions visit-return
   //> Statements and State visit-var
   override def visitVarStmt(stmt: Stmt.Var): Unit =
-    var value: Any = Token.dummy
-    if (stmt.initializer != null) value = evaluate(stmt.initializer)
+    var value: Any = Token.UNINITIATED
+    if (stmt.initializer != null)
+      value = evaluate(stmt.initializer)
     env.define(stmt.name.lexeme, value)
 
   //< Statements and State visit-var
@@ -338,7 +335,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   //< Inheritance interpreter-visit-super
   //> Classes interpreter-visit-this
-  override def visitThisExpr(expr: Expr.This): Any = lookUpVariable(expr.keyword, expr)
+  override def visitThisExpr(expr: Expr.This): Any = lookUpVariable(expr.keyword, expr).get
 
   //< Classes interpreter-visit-this
   //> visit-unary
@@ -365,21 +362,20 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
     */
     //> Resolving and Binding call-look-up-variable
     // FIXME: solve global variable definition
-    lookUpVariable(expr.name, expr)
+    lookUpVariable(expr.name, expr) match
+      case Some(Token.UNINITIATED) => throw new RuntimeError(expr.name,
+          s"Variable '${expr.name.lexeme}' not initialized.")
+      case Some(v) => v
+      case None => throw new RuntimeError(expr.name,
+        s"Undefined variable '${expr.name.lexeme}'.")
+
   //< Resolving and Binding call-look-up-variable
 
   //> Resolving and Binding look-up-variable
-  private def lookUpVariable(name: Token, expr: Expr): Any =
-
-    val opt = locals.get(expr) match
+  private def lookUpVariable(name: Token, expr: Expr): Option[Any] =
+    locals.get(expr) match
       case Some(distance) => env.getAt(distance, name.lexeme)
       case None => globals.get(name)
-    opt match
-      case Some(v) =>
-        if v == Token.dummy then
-          throw new RuntimeError(name, "Variable '" + name.lexeme + "' not initialized.")
-        v
-      case None => throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.")
 
   //< Resolving and Binding look-up-variable
   //< Statements and State visit-variable
@@ -408,9 +404,9 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   private def isEqual(a: Any, b: Any): Boolean =
     if a == null then b == null else a.equals(b)
 
-//  override def visitCommaExpr(expr: Expr.Comma): Any =
-//    evaluate(expr.left)
-//    evaluate(expr.right)
+  //  override def visitCommaExpr(expr: Expr.Comma): Any =
+  //    evaluate(expr.left)
+  //    evaluate(expr.right)
 
   override def visitTernaryExpr(expr: Expr.Ternary): Any =
     if isTruthy(evaluate(expr.condition)) then

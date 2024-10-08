@@ -9,7 +9,7 @@ package com.craftinginterpreters.scala.lox
 class Token(
   val typ: TokenType,
   val lexeme: String,
-  val literal: Any = Token.dummy,
+  val literal: Any = Token.UNINITIATED,
   val line: Int = -1 // [location]
 ):
   def this(typ: TokenType) =
@@ -17,7 +17,6 @@ class Token(
   override def toString: String = f"$typ $lexeme $literal"
 
 object Token:
-  final val dummy = new Object()
-  final val THIS = new Token(TokenType.THIS, TokenType.THIS.key)
-  final val SUPER = new Token(TokenType.SUPER, TokenType.SUPER.key)
+  final val UNINITIATED = new Object()
+  final val DUMMY = new Token(TokenType.EOF, "")
 

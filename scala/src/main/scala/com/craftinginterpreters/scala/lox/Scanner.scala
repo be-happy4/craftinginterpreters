@@ -37,11 +37,6 @@ object Scanner:
   def apply(path: Path): Scanner =
     new Scanner(String(java.nio.file.Files.readAllBytes(path)))
 
-  def main(args: Array[String]): Unit =
-    val scanner = Scanner(Path.of("./test/comments/block_comment.lox"))
-    val tokens = scanner.scanTokens
-    println(tokens)
-
 
 class Scanner(private val source: String): //< scan-state
   final private val tokens = new ListBuffer[Token]

@@ -25,7 +25,7 @@ class LoxFunction(
     */
     //> lox-function-bind-with-initializer
     new LoxFunction(name, declaration, environment, isInitializer)
-    //< lox-function-bind-with-initializer
+  //< lox-function-bind-with-initializer
 
   //< Classes bind-instance
   //> function-to-string
@@ -42,16 +42,18 @@ class LoxFunction(
         Environment environment = new Environment(interpreter.globals);
     */
     //> call-closure
-    val environment = new Environment(closure)
+    val env = new Environment(closure)
     //< call-closure
     for (i <- declaration.params.indices) {
-      environment.define(declaration.params(i).lexeme, arguments(i))
+      env.define(declaration.params(i).lexeme, arguments(i))
     }
     /* Functions function-call < Functions catch-return
         interpreter.executeBlock(declaration.body, environment);
     */
     //> catch-return
-    try interpreter.execute(declaration.body, environment)
+    try interpreter.executeBlock(declaration.body match
+      case x: Stmt.Block => x.statements
+      case v => List(v), env)
     catch {
       case returnValue: Return =>
 

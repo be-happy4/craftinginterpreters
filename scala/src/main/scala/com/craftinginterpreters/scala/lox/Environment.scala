@@ -42,7 +42,7 @@ class Environment: //> environment-constructors
   //< environment-assign
   //> environment-define
   def define(name: String, value: Any): Unit =
-    values.put(name, value)
+    values(name) = value
 
   //< environment-define
   //> Resolving and Binding ancestor

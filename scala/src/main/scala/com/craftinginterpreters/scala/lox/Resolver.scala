@@ -40,6 +40,8 @@ object Resolver: //> function-type
     name: Token,
     var state: VariableState)
 
+  private final val USED_VARIABLE = Variable(Token.DUMMY, VariableState.READ)
+
 class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   with Stmt.Visitor[Unit]:
   //> scopes-field
@@ -88,14 +90,14 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
     //> Inheritance begin-super-scope
     if (stmt.superclass != null) {
       beginScope()
-      Token.dummy
-      scopes.head += "super" -> Variable(Token.THIS, DEFINED)
+      Token.UNINITIATED
+      scopes.head("super") = Resolver.USED_VARIABLE
     }
     //< Inheritance begin-super-scope
     //> resolve-methods
     //> resolver-begin-this-scope
     beginScope()
-    scopes.head += "this" -> Variable(Token.SUPER, DEFINED)
+    scopes.head("this") = Resolver.USED_VARIABLE
     //< resolver-begin-this-scope
     for (method <- stmt.methods) {
       var declaration = Resolver.FunctionType.METHOD
@@ -316,14 +318,13 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   //< end-scope
   //> declare
   private def declare(name: Token): Unit =
-    // TODO: enable global variable definition
     if (scopes.isEmpty) return
     val scope = scopes.head
     //> duplicate-variable
     if (scope.contains(name.lexeme))
       Lox.error(name, "Already a variable with this name in this scope.")
     //< duplicate-variable
-    scope += name.lexeme -> Variable(name, VariableState.DECLARED)
+    scope(name.lexeme) = Variable(name, VariableState.DECLARED)
 
   //< declare
   //> define
@@ -334,15 +335,14 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   //< define
   //> resolve-local
   private def resolveLocal(expr: Expr, name: Token, isRead: Boolean): Unit =
-    var flag = true
-    for ((scope, i) <- scopes.view.reverse.zipWithIndex if flag) {
-      if (scope.contains(name.lexeme)) {
-        interpreter.resolve(expr, scopes.size - 1 - i)
-        if (isRead) {
-          scopes(i)(name.lexeme).state = VariableState.READ;
-        }
-        flag = false
-      }
-    }
+    scopes.indices.reverse.takeWhile(i =>
+      scopes(i).get(name.lexeme) match
+        case Some(v) =>
+          interpreter.resolve(expr, scopes.size - 1 - i)
+          if (isRead)
+            v.state = VariableState.READ;
+          false
+        case None => true
+    )
 //< resolve-local
 
