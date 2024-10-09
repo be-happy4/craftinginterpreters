@@ -38,9 +38,10 @@ object Resolver: //> function-type
 
   private case class Variable(
     name: Token,
-    var state: VariableState)
+    var state: VariableState,
+    val slot: Int)
 
-  private final val USED_VARIABLE = Variable(Token.DUMMY, VariableState.READ)
+  private final val USED_VARIABLE = Variable(Token.DUMMY, VariableState.READ, -1)
 
 class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
   with Stmt.Visitor[Unit]:
@@ -324,7 +325,7 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]
     if (scope.contains(name.lexeme))
       Lox.error(name, "Already a variable with this name in this scope.")
     //< duplicate-variable
-    scope(name.lexeme) = Variable(name, VariableState.DECLARED)
+    scope(name.lexeme) = Variable(name, VariableState.DECLARED, scope.size)
 
   //< declare
   //> define

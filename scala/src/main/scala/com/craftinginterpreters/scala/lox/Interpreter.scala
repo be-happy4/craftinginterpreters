@@ -31,7 +31,8 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   private var env = globals
   //< Functions global-env
   //> Resolving and Binding locals-field
-  final private val locals = new mutable.HashMap[Expr, Int]()
+  private val locals = new mutable.HashMap[Expr, Int]()
+  private val slots = new mutable.HashMap[Expr, Integer]()
 
   globals.define("clock", new LoxCallable() {
     override def arity = 0
@@ -72,6 +73,11 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
   private def execute(stmt: Stmt): Any =
     stmt.accept(this)
 
+  def resolve(expr: Expr, depth: Int, slot: Int): Unit =
+    locals(expr) = depth
+    slots(expr) = slot
+    LazyList.empty
+
   //< Statements and State execute
   //> Resolving and Binding resolve
   def resolve(expr: Expr, depth: Int): Unit =
@@ -79,18 +85,20 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   //< Resolving and Binding resolve
   //> Statements and State execute-block
-  def executeBlock(stmts: List[Stmt], env: Environment): Unit =
+  def executeBlock(stmts: List[Stmt], env: Environment): Any =
     val previous = this.env
     try {
       this.env = env
+      var res: Any = ()
       for (statement <- stmts) {
-        execute(statement)
+        res = execute(statement)
       }
+      res
     } finally this.env = previous
 
   //< Statements and State execute-block
   //> Statements and State visit-block
-  override def visitBlockStmt(stmt: Stmt.Block): Unit =
+  override def visitBlockStmt(stmt: Stmt.Block): Any =
     executeBlock(stmt.statements, new Environment(env))
 
   //< Statements and State visit-block
@@ -158,9 +166,10 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   //< Functions visit-function
   //> Control Flow visit-if
-  override def visitIfStmt(stmt: Stmt.If): Unit =
+  override def visitIfStmt(stmt: Stmt.If): Any =
     if (isTruthy(evaluate(stmt.condition))) execute(stmt.thenBranch)
     else if (stmt.elseBranch != null) execute(stmt.elseBranch)
+    else ()
 
   //< Control Flow visit-if
   //> Statements and State visit-print
@@ -192,7 +201,7 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   //< Control Flow visit-while
   //> Statements and State visit-assign
-  override def visitAssignExpr(expr: Expr.Assign): Any =
+  override def visitAssignExpr(expr: Expr.Assign): Unit =
     val value = evaluate(expr.value)
     /* Statements and State visit-assign < Resolving and Binding resolved-assign
         env.assign(expr.name, value);
@@ -202,7 +211,6 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
       case Some(distance) => env.assignAt(distance, expr.name, value)
       case None => globals.assign(expr.name, value)
     //< Resolving and Binding resolved-assign
-    value
 
   //< Statements and State visit-assign
   //> visit-binary
@@ -361,7 +369,6 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
         return env.get(expr.name);
     */
     //> Resolving and Binding call-look-up-variable
-    // FIXME: solve global variable definition
     lookUpVariable(expr.name, expr) match
       case Some(Token.UNINITIATED) => throw new RuntimeError(expr.name,
           s"Variable '${expr.name.lexeme}' not initialized.")

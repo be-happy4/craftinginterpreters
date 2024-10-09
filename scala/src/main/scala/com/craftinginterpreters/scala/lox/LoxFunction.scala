@@ -50,22 +50,19 @@ class LoxFunction(
     /* Functions function-call < Functions catch-return
         interpreter.executeBlock(declaration.body, environment);
     */
+    var res: Any = ()
     //> catch-return
-    try interpreter.executeBlock(declaration.body match
-      case x: Stmt.Block => x.statements
-      case v => List(v), env)
-    catch {
-      case returnValue: Return =>
-
-        //> Classes early-return-this
-        if (isInitializer) return closure.getAt(0, "this")
-        //< Classes early-return-this
-        return returnValue.value
-    }
+    try
+      res = interpreter.executeBlock(declaration.body match
+        case x: Stmt.Block => x.statements
+        case v => List(v), env)
+    catch
+      case returnValue: Return => res = returnValue.value
+    if (isInitializer)
+      res = closure.getAt(0, "this")
     //< catch-return
     //> Classes return-this
-    if (isInitializer) return closure.getAt(0, "this")
     //< Classes return-this
-    null
+    res
 //< function-call
 
