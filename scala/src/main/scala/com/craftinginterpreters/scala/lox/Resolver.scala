@@ -36,7 +36,6 @@ object Resolver: //> function-type
     var state: VariableState,
     slot: Int)
 
-  private final val USED_VARIABLE = Variable(Token.DUMMY, VariableState.READ, -1)
 
 class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]:
   private val scopes = new mutable.ArrayDeque[mutable.HashMap[String, Variable]]
@@ -59,18 +58,17 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]:
   override def visitClassStmt(stmt: Stmt.Class): Unit =
     val enclosingClass = currentClass
     currentClass = Resolver.ClassType.CLASS
-    declare(stmt.name)
-    define(stmt.name)
+    declare(stmt.name, VariableState.DEFINED)
     if (stmt.superclass != null && stmt.name.lexeme.equals(stmt.superclass.name.lexeme))
       Lox.error(stmt.superclass.name, "A class can't inherit from itself.")
     if (stmt.superclass != null) {
       currentClass = Resolver.ClassType.SUBCLASS
       resolve(stmt.superclass)
       beginScope()
-      scopes.head("super") = Resolver.USED_VARIABLE
+      declare(Token.SUPER, VariableState.READ)
     }
     beginScope()
-    scopes.head("this") = Resolver.USED_VARIABLE
+    declare(Token.THIS, VariableState.READ)
     for (method <- stmt.methods) {
       var declaration = Resolver.FunctionType.METHOD
       if (method.name.lexeme.equals("init")) declaration = Resolver.FunctionType.INITIALIZER
@@ -100,7 +98,8 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]:
     if (currentFunction == Resolver.FunctionType.NONE)
       Lox.error(stmt.keyword, "Can't return from top-level code.")
     if (stmt.value != null) {
-      if (currentFunction == Resolver.FunctionType.INITIALIZER) Lox.error(stmt.keyword, "Can't return a value from an initializer.")
+      if (currentFunction == Resolver.FunctionType.INITIALIZER)
+        Lox.error(stmt.keyword, "Can't return a value from an initializer.")
       resolve(stmt.value)
     }
 
@@ -204,12 +203,12 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]:
       Lox.error(variable.name, "Local variable is not used.");
     }
 
-  private def declare(name: Token): Unit =
+  private def declare(name: Token, state: VariableState = VariableState.DECLARED): Unit =
     if (scopes.isEmpty) return
     val scope = scopes.head
     if (scope.contains(name.lexeme))
       Lox.error(name, "Already a variable with this name in this scope.")
-    scope(name.lexeme) = Variable(name, VariableState.DECLARED, scope.size)
+    scope(name.lexeme) = Variable(name, state, scope.size)
 
   private def define(name: Token): Unit =
     if (scopes.isEmpty) return

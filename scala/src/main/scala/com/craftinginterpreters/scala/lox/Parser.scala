@@ -277,9 +277,9 @@ class Parser( //< parse-error
       val value = assignment
       expr = expr match
         case variable: Expr.Variable =>
-          new Expr.Assign(variable.name, value)
+          Expr.Assign(variable.name, value)
         case get: Expr.Get =>
-          new Expr.Set(get.obj, get.name, value)
+          Expr.Set(get.obj, get.name, value)
         case _ =>
           error(equals, "Invalid assignment target.") // [no-throw]
           expr

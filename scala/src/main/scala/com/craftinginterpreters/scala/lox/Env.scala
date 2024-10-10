@@ -14,18 +14,18 @@ class Env(val enclosing: Env = null):
 //    if (enclosing != null) return enclosing.get(name)
 //    throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.")
 //  }
-////
-//  def assign(name: Token, slot: Int, value: Any): Unit = {
-//    if (values.contains(name.lexeme)) {
-//      values.put(name.lexeme, value)
-//      return
-//    }
-//    if (enclosing != null) {
-//      enclosing.assign(name, slot, value)
-//      return
-//    }
-//    throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.")
-//  }
+//
+  def assign(name: Token, slot: Int, value: Any): Unit = {
+    if (values.contains(name.lexeme)) {
+      values += value
+      return
+    }
+    if (enclosing != null) {
+      enclosing.assign(name, slot, value)
+      return
+    }
+    throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.")
+  }
 
   def define(value: Any): Int =
     values += value

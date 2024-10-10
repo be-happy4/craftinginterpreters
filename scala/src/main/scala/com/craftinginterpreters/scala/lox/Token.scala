@@ -18,5 +18,6 @@ class Token(
 
 object Token:
   final val UNINITIATED = new Object()
-  final val DUMMY = new Token(TokenType.EOF, "")
+  final val THIS = new Token(TokenType.THIS)
+  final val SUPER = new Token(TokenType.SUPER)
 

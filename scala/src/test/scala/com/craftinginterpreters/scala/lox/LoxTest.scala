@@ -38,4 +38,8 @@ class LoxTest extends InterpreterTest:
     assertEquals(fromOut(run("closure", "assign_to_shadowed_later")),
       "inner\nassigned\n")
 
+  test("test class"):
+    assertEquals(fromOut(run("class", "person")),
+      "Jane\n")
+
 

@@ -9,7 +9,7 @@ class LoxInstance(val klass: LoxClass): //< lox-instance-fields
   final private val fields = new mutable.HashMap[String, Any]
 
   //> lox-instance-get-property
-  def get(name: Token): Any =
+  def apply(name: Token): Any =
     if (fields.contains(name.lexeme)) return fields(name.lexeme)
     //> lox-instance-get-method
     val method = klass.findMethod(name.lexeme)
@@ -25,7 +25,7 @@ class LoxInstance(val klass: LoxClass): //< lox-instance-fields
 
   //< lox-instance-get-property
   //> lox-instance-set-property
-  def set(name: Token, value: Any): Unit =
+  def update(name: Token, value: Any): Unit =
     fields.put(name.lexeme, value)
 
   //< lox-instance-set-property

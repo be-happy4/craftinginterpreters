@@ -14,12 +14,12 @@ class LoxFunction(
   private val isInitializer: Boolean) extends LoxCallable:
 
   def bind(instance: LoxInstance): LoxFunction =
-    val environment = new Env(closure)
-    environment.define("this", instance)
+    val env = new Env(closure)
+    env.define(instance)
     /* Classes bind-instance < Classes lox-function-bind-with-initializer
         return new LoxFunction(declaration, environment);
     */
-    new LoxFunction(name, declaration, environment, isInitializer)
+    new LoxFunction(name, declaration, env, isInitializer)
 
   override def toString: String = "<fn " + name + ">"
 

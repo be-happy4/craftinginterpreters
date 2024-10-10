@@ -20,7 +20,7 @@ class Interpreter extends Expr.Visitor[Any]:
   private final val globals = new mutable.HashMap[String, Any]()
   private var env: Env = null
   private val locals = new mutable.HashMap[Expr, Int]()
-  private val slots = new mutable.HashMap[Expr, Int]()
+  private val slots = new mutable.HashMap[Stmt, Int]()
 
   globals("clock") = new LoxCallable() {
     override def arity = 0
@@ -99,7 +99,8 @@ class Interpreter extends Expr.Visitor[Any]:
     /* Classes interpreter-visit-class < Classes interpret-methods
         LoxClass klass = new LoxClass(stmt.name.lexeme);
     */
-//    env.assign(stmt.name, slots(), klass)
+    // TODO: Class slot
+    assign(stmt.name, 0, klass)
 
   override def visitFunctionStmt(stmt: Stmt.Function): Unit =
     val function = new LoxFunction(stmt.name.lexeme, stmt.function, env, false)
@@ -192,7 +193,7 @@ class Interpreter extends Expr.Visitor[Any]:
       case _ => throw new RuntimeError(expr.paren, "Can only call functions and classes.")
 
   override def visitGetExpr(expr: Expr.Get): Any = evaluate(expr.obj) match
-    case value: LoxInstance => value.get(expr.name)
+    case value: LoxInstance => value(expr.name)
     case _ => throw new RuntimeError(expr.name, "Only instances have properties.")
 
   override def visitGroupingExpr(expr: Expr.Grouping): Any = evaluate(expr.expression)
@@ -210,10 +211,9 @@ class Interpreter extends Expr.Visitor[Any]:
     obj match
       case inst: LoxInstance =>
         val value = evaluate(expr.value)
-        inst.set(expr.name, value)
+        inst(expr.name) = value
         value
-      case _ =>
-        throw new RuntimeError(expr.name, "Only instances have fields.")
+      case _ => throw new RuntimeError(expr.name, "Only instances have fields.")
 
   override def visitSuperExpr(expr: Expr.Super): Any =
     val distance = locals(expr)
@@ -286,6 +286,10 @@ class Interpreter extends Expr.Visitor[Any]:
 
   private def define(name: Token, value: Any): Unit =
     if (env != null) env.define(value)
+    else globals(name.lexeme) = value
+
+  private def assign(name: Token, slot: Int, value: Any): Unit =
+    if (env != null) env.assign(name, slot, value)
     else globals(name.lexeme) = value
 
 object Interpreter:
