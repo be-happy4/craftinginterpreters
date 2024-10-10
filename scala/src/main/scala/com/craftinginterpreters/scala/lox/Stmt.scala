@@ -1,4 +1,3 @@
-//> Appendix II stmt
 
 package com.craftinginterpreters.scala.lox
 
@@ -34,45 +33,24 @@ object Stmt:
     def visitEmptyStmt(stmt: Stmt.Empty.type): R
 
 // Nested Stmt classes here...
-//> stmt-block
-  class Block(val statements: List[Stmt]) extends Stmt
-//< stmt-block
-//> stmt-class
-  class Class(
-    val name: Token,
-    val superclass: Expr.Variable,
-    val methods: List[Stmt.Function]) extends Stmt
-//< stmt-class
-////> stmt-expression
-//  class Expression(val expression: Expr) extends Stmt
-////< stmt-expression
-//> stmt-function
-  class Function(val name: Token, val function: Expr.Function) extends Stmt
-//< stmt-function
-//> stmt-if
-  class If(
-    val condition: Expr,
-    val thenBranch: Stmt,
-    val elseBranch: Stmt) extends Stmt
-//< stmt-if
-//> stmt-print
-  class Print(val expression: Expr) extends Stmt
-//< stmt-print
-//> stmt-return
-  class Return(val keyword: Token, val value: Expr) extends Stmt
-//< stmt-return
-//> stmt-var
-  class Var(val name: Token, val initializer: Expr) extends Stmt
-//< stmt-var
-//> stmt-while
-  class While(val condition: Expr, val body: Stmt) extends Stmt
-//< stmt-while
-//> stmt-break
+  case class Block(statements: List[Stmt]) extends Stmt
+  case class Class(
+    name: Token,
+    superclass: Expr.Variable,
+    methods: List[Stmt.Function]) extends Stmt
+//  case class Expression(val expression: Expr) extends Stmt
+  case class Function(name: Token, function: Expr.Function) extends Stmt
+  case class If(
+    condition: Expr,
+    thenBranch: Stmt,
+    elseBranch: Stmt) extends Stmt
+  case class Print(expression: Expr) extends Stmt
+  case class Return(keyword: Token, value: Expr) extends Stmt
+  case class Var(name: Token, initializer: Expr) extends Stmt
+  case class While(condition: Expr, body: Stmt) extends Stmt
   object Break extends Stmt
-//< stmt-break
   object Empty extends Stmt
 
-//< Appendix II stmt
 
 sealed abstract class Expr extends Stmt:
   def accept[R](visitor: Expr.Visitor[R]): R =
@@ -93,7 +71,8 @@ sealed abstract class Expr extends Stmt:
       case x: Expr.Function => visitor.visitFunctionExpr(x)
 
 object Expr:
-  trait Visitor[R]:
+  trait Visitor[R] extends Stmt.Visitor[R]:
+    override def visitExprStmt(stmt: Expr): R = stmt.accept(Visitor.this)
     def visitAssignExpr(expr: Expr.Assign): R
     def visitBinaryExpr(expr: Expr.Binary): R
     def visitCallExpr(expr: Expr.Call): R
@@ -110,62 +89,33 @@ object Expr:
     def visitFunctionExpr(expr: Expr.Function): R
 
   // Nested Expr classes here...
-  //> expr-assign
-  class Assign(val name: Token, val value: Expr) extends Expr
-  //< expr-assign
-  //> expr-binary
-  class Binary(
-    val left: Expr,
-    val operator: Token,
-    val right: Expr) extends Expr
-  //< expr-binary
-  //> expr-call
-  class Call(
-    val callee: Expr,
-    val paren: Token,
-    val arguments: List[Expr]) extends Expr
-  //< expr-call
-  //> expr-get
-  class Get(val obj: Expr, val name: Token) extends Expr
-  //< expr-get
-  //> expr-grouping
-  class Grouping(val expression: Expr) extends Expr
-  //< expr-grouping
-  //> expr-literal
-  class Literal(val value: Any) extends Expr
-  //< expr-literal
-  //> expr-logical
-  class Logical(
-    val left: Expr,
-    val operator: Token,
-    val right: Expr) extends Expr
-  //< expr-logical
-  //> expr-set
-  class Set(
-    val obj: Expr,
-    val name: Token,
-    val value: Expr) extends Expr
-  //< expr-set
-  //> expr-super
-  class Super(val keyword: Token, val method: Token) extends Expr
-  //< expr-super
-  //> expr-this
-  class This(val keyword: Token) extends Expr
-  //< expr-this
-  //> expr-unary
-  class Unary(val operator: Token, val right: Expr) extends Expr
-  //< expr-unary
-  //> expr-variable
-  class Variable(val name: Token) extends Expr
-  //< expr-variable
-  //> expr-ternary
-  class Ternary(
-    val condition: Expr,
-    val positiveExpression: Expr,
-    val negativeExpression: Expr) extends Expr
-  //< expr-ternary
-  //> expr-function
-  class Function(val params: List[Token], val body: Stmt) extends Expr
-//< expr-function
+  case class Assign(name: Token, value: Expr) extends Expr
+  case class Binary(
+    left: Expr,
+    operator: Token,
+    right: Expr) extends Expr
+  case class Call(
+    callee: Expr,
+    paren: Token,
+    arguments: List[Expr]) extends Expr
+  case class Get(obj: Expr, name: Token) extends Expr
+  case class Grouping(expression: Expr) extends Expr
+  case class Literal(value: Any) extends Expr
+  case class Logical(
+    left: Expr,
+    operator: Token,
+    right: Expr) extends Expr
+  case class Set(
+    obj: Expr,
+    name: Token,
+    value: Expr) extends Expr
+  case class Super(keyword: Token, method: Token) extends Expr
+  case class This(keyword: Token) extends Expr
+  case class Unary(operator: Token, right: Expr) extends Expr
+  case class Variable(name: Token) extends Expr
+  case class Ternary(
+    condition: Expr,
+    positiveExpression: Expr,
+    negativeExpression: Expr) extends Expr
+  case class Function(params: List[Token], body: Stmt) extends Expr
 
-//< Appendix II expr

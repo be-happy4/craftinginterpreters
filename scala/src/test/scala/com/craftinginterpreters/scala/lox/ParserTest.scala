@@ -9,15 +9,12 @@ import scala.util.chaining.scalaUtilChainingOps
 object ParserTest:
   val printer = AstPrinter()
 
-  def assertAST(obtained: Stmt | Expr, expected: Stmt | Expr): Unit =
-    def printStmtOrExpr(value: Stmt | Expr): String =
-      value match
-        case x: Stmt => printer.print(x)
-        case x: Expr => printer.print(x)
+  def assertAST(obtained: Stmt, expected: Stmt): Unit =
+    assertEquals(
+      printer.print(obtained).replace(".0", ""),
+      printer.print(expected))
 
-    assertEquals(printStmtOrExpr(obtained).replace(".0", ""), printStmtOrExpr(expected))
-
-  def assertASTs(obtained: List[Stmt | Expr], expected: List[Stmt | Expr]): Unit =
+  def assertASTs(obtained: List[Stmt], expected: List[Stmt]): Unit =
     assertEquals(obtained.size, expected.size)
     (obtained zip expected).foreach(assertAST)
 

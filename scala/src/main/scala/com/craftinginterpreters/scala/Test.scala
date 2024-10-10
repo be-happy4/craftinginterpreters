@@ -1,10 +1,5 @@
 package com.craftinginterpreters.scala
 
-extension (x: String)
-  def convertToUnicode: String = x.map { c =>
-    if (c > 127) f"\\u${c.toInt}%04x" else c
-  }.mkString
-
 object Test:
   def f =
     if (1 == 1) 2 else ()
@@ -38,13 +33,4 @@ object Test:
     for i <- 1 until 10 do
       i
   }
-
-  def convertJsonToUnicode(json: ujson.Value): ujson.Value = json match
-    case ujson.Str(s) => ujson.Str(s.convertToUnicode)
-    case ujson.Obj(obj) =>
-      val items = obj.map { case (k, v) => k.convertToUnicode -> convertJsonToUnicode(v) }
-      ujson.Obj(items.head, items.tail.toSeq *)
-    case ujson.Arr(arr) =>
-      ujson.Arr(arr.map(convertJsonToUnicode).toSeq *)
-    case other => other // For numbers, booleans, and null, leave them unchanged
 

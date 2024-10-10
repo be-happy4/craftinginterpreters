@@ -9,7 +9,12 @@ import java.util.stream.Stream
 import scala.util.chaining.scalaUtilChainingOps
 
 object BaseTest:
-  val BASE_TEST_PATH: Path = Path.of(".").resolve("test")
+  private var path = Path.of(".").toAbsolutePath
+  while
+    !Files.exists(path.resolve("test").resolve("empty_file.lox"))
+  do
+    path = path.getParent
+  val BASE_TEST_PATH: Path = path.resolve("test")
 
 
 trait BaseTest extends munit.FunSuite:

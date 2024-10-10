@@ -1,49 +1,36 @@
 package com.craftinginterpreters.scala.lox
 
 
-//> Functions import-array-list
 
 import com.craftinginterpreters.scala.lox.Interpreter.stringify
 import com.craftinginterpreters.scala.lox.TokenType.*
 
+import java.util.Objects
 import scala.collection.mutable
-//< Statements and State import-list
-//> Resolving and Binding import-map
 
-//< Resolving and Binding import-map//< Resolving and Binding import-map
 
 /* Evaluating Expressions interpreter-class < Statements and State interpreter
 class Interpreter implements Expr.Visitor<Object> {
 */
-//> Statements and State interpreter
-//< Statements and State env-field
-//> Functions interpreter-constructor
-//< Resolving and Binding locals-field
-//> Statements and State env-field
-class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
+class Interpreter extends Expr.Visitor[Any]:
 
-  //< Statements and State interpreter
   /* Statements and State env-field < Functions global-env
     private Environment env = new Environment();
   */
-  //> Functions global-env
-  private final val globals = new Environment()
-  private var env = globals
-  //< Functions global-env
-  //> Resolving and Binding locals-field
+  private final val globals = new mutable.HashMap[String, Any]()
+  private var env: Env = null
   private val locals = new mutable.HashMap[Expr, Int]()
-  private val slots = new mutable.HashMap[Expr, Integer]()
+  private val slots = new mutable.HashMap[Expr, Int]()
 
-  globals.define("clock", new LoxCallable() {
+  globals("clock") = new LoxCallable() {
     override def arity = 0
 
     override def call(interpreter: Interpreter, arguments: List[Any]): Double =
       System.nanoTime() / 1000000.0
 
     override def toString = "<native fn>"
-  })
+  }
 
-  //< Functions interpreter-constructor
   /* Evaluating Expressions interpret < Statements and State interpret
     void interpret(Expr expression) { // [void]
       try {
@@ -54,227 +41,143 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
       }
     }
   */
-  //> Statements and State interpret
   def interpret(statements: List[Stmt]): List[Any] =
     try {
-      statements.map(execute)
+      statements.map(evaluate)
     } catch {
       case error: RuntimeError =>
         Lox.runtimeError(error)
         List.empty
     }
 
-  //< Statements and State interpret
-  //> evaluate
-  private def evaluate(expr: Expr): Any = expr.accept(this)
-
-  //< evaluate
-  //> Statements and State execute
-  private def execute(stmt: Stmt): Any =
+  private def evaluate(stmt: Stmt): Any =
     stmt.accept(this)
 
   def resolve(expr: Expr, depth: Int, slot: Int): Unit =
     locals(expr) = depth
     slots(expr) = slot
-    LazyList.empty
 
-  //< Statements and State execute
-  //> Resolving and Binding resolve
-  def resolve(expr: Expr, depth: Int): Unit =
-    locals(expr) = depth
-
-  //< Resolving and Binding resolve
-  //> Statements and State execute-block
-  def executeBlock(stmts: List[Stmt], env: Environment): Any =
+  def executeBlock(stmts: List[Stmt], env: Env): Any =
     val previous = this.env
     try {
       this.env = env
       var res: Any = ()
       for (statement <- stmts) {
-        res = execute(statement)
+        res = evaluate(statement)
       }
       res
     } finally this.env = previous
 
-  //< Statements and State execute-block
-  //> Statements and State visit-block
   override def visitBlockStmt(stmt: Stmt.Block): Any =
-    executeBlock(stmt.statements, new Environment(env))
+    executeBlock(stmt.statements, new Env(env))
 
-  //< Statements and State visit-block
-  //> Classes interpreter-visit-class
   override def visitClassStmt(stmt: Stmt.Class): Unit =
-    //> Inheritance interpret-superclass
     var superclass: Any = null
     if (stmt.superclass != null) {
       superclass = evaluate(stmt.superclass)
       if (!superclass.isInstanceOf[LoxClass])
         throw new RuntimeError(stmt.superclass.name, "Superclass must be a class.")
     }
-    //< Inheritance interpret-superclass
-    env.define(stmt.name.lexeme, null)
-    //> Inheritance begin-superclass-env
+    define(stmt.name, null)
     if (stmt.superclass != null) {
-      env = new Environment(env)
-      env.define("super", superclass)
+      env = new Env(env)
+      env.define(superclass)
     }
-    //< Inheritance begin-superclass-env
-    //> interpret-methods
     val methods = new mutable.HashMap[String, LoxFunction]
     for (method <- stmt.methods) {
       /* Classes interpret-methods < Classes interpreter-method-initializer
             LoxFunction function = new LoxFunction(method, env);
       */
-      //> interpreter-method-initializer
       val function = new LoxFunction(method.name.lexeme, method.function, env, method.name.lexeme.equals("init"))
-      //< interpreter-method-initializer
-      methods.put(method.name.lexeme, function)
+      methods(method.name.lexeme) = function
     }
     /* Classes interpret-methods < Inheritance interpreter-construct-class
         LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
     */
-    //> Inheritance interpreter-construct-class
     val klass = new LoxClass(stmt.name.lexeme, superclass.asInstanceOf[LoxClass], methods.toMap)
-    //> end-superclass-env
     if (superclass != null) env = env.enclosing
-    //< end-superclass-env
-    //< Inheritance interpreter-construct-class
-    //< interpret-methods
     /* Classes interpreter-visit-class < Classes interpret-methods
         LoxClass klass = new LoxClass(stmt.name.lexeme);
     */
-    env.assign(stmt.name, klass)
+//    env.assign(stmt.name, slots(), klass)
 
-  //< Classes interpreter-visit-class
-  //> Statements and State visit-expression-stmt
-  override def visitExprStmt(stmt: Expr): Any =
-    evaluate(stmt)
-
-  //< Statements and State visit-expression-stmt
-  //> Functions visit-function
   override def visitFunctionStmt(stmt: Stmt.Function): Unit =
-    /* Functions visit-function < Functions visit-closure
-        LoxFunction function = new LoxFunction(stmt);
-    */
-    /* Functions visit-closure < Classes construct-function
-        LoxFunction function = new LoxFunction(stmt, env);
-    */
-    //> Classes construct-function
     val function = new LoxFunction(stmt.name.lexeme, stmt.function, env, false)
-    //< Classes construct-function
-    env.define(stmt.name.lexeme, function)
+    define(stmt.name, function)
 
-  //< Functions visit-function
-  //> Control Flow visit-if
   override def visitIfStmt(stmt: Stmt.If): Any =
-    if (isTruthy(evaluate(stmt.condition))) execute(stmt.thenBranch)
-    else if (stmt.elseBranch != null) execute(stmt.elseBranch)
+    if (isTruthy(evaluate(stmt.condition))) evaluate(stmt.thenBranch)
+    else if (stmt.elseBranch != null) evaluate(stmt.elseBranch)
     else ()
 
-  //< Control Flow visit-if
-  //> Statements and State visit-print
   override def visitPrintStmt(stmt: Stmt.Print): Unit =
     val value = evaluate(stmt.expression)
     println(stringify(value))
 
-  //< Statements and State visit-print
-  //> Functions visit-return
   override def visitReturnStmt(stmt: Stmt.Return): Unit =
-    var value: Any = null
-    if (stmt.value != null) value = evaluate(stmt.value)
-    throw new Return(value)
+    throw new Return(Option(stmt.value).map(evaluate).orNull)
 
-  //< Functions visit-return
-  //> Statements and State visit-var
   override def visitVarStmt(stmt: Stmt.Var): Unit =
     var value: Any = Token.UNINITIATED
     if (stmt.initializer != null)
       value = evaluate(stmt.initializer)
-    env.define(stmt.name.lexeme, value)
+    define(stmt.name, value)
 
-  //< Statements and State visit-var
-  //> Control Flow visit-while
   override def visitWhileStmt(stmt: Stmt.While): Unit = try {
-    while (isTruthy(evaluate(stmt.condition))) execute(stmt.body)
+    while (isTruthy(evaluate(stmt.condition))) evaluate(stmt.body)
   } catch
     case _: LoopBreakerException => // ignored
 
-  //< Control Flow visit-while
-  //> Statements and State visit-assign
   override def visitAssignExpr(expr: Expr.Assign): Unit =
     val value = evaluate(expr.value)
     /* Statements and State visit-assign < Resolving and Binding resolved-assign
         env.assign(expr.name, value);
     */
-    //> Resolving and Binding resolved-assign
     locals.get(expr) match
-      case Some(distance) => env.assignAt(distance, expr.name, value)
-      case None => globals.assign(expr.name, value)
-    //< Resolving and Binding resolved-assign
+      case Some(distance) => env.assignAt(distance, slots(expr), value)
+      case None if globals.contains(expr.name.lexeme) =>
+        globals(expr.name.lexeme) = value
+      case None =>
+        throw new RuntimeError(expr.name, "Undefined variable '" + expr.name.lexeme + "'.")
 
-  //< Statements and State visit-assign
-  //> visit-binary
   override def visitBinaryExpr(expr: Expr.Binary): Any =
     val left = evaluate(expr.left)
     val right = evaluate(expr.right) // [left]
 
     expr.operator.typ match
-      //> binary-equality
       case BANG_EQUAL =>
-        !isEqual(left, right)
+        !Objects.equals(left, right)
       case EQUAL_EQUAL =>
-        isEqual(left, right)
-      //< binary-equality
-      //> binary-comparison
+        Objects.equals(left, right)
       case GREATER =>
-        //> check-greater-operand
         val (dl, dr) = checkNumberOperands(expr.operator, left, right)
-        //< check-greater-operand
         dl > dr
       case GREATER_EQUAL =>
-        //> check-greater-equal-operand
         val (dl, dr) = checkNumberOperands(expr.operator, left, right)
-        //< check-greater-equal-operand
         dl >= dr
       case LESS =>
-        //> check-less-operand
         val (dl, dr) = checkNumberOperands(expr.operator, left, right)
-        //< check-less-operand
         dl < dr
       case LESS_EQUAL =>
-        //> check-less-equal-operand
         val (dl, dr) = checkNumberOperands(expr.operator, left, right)
-        //< check-less-equal-operand
         dl <= dr
-      //< binary-comparison
       case MINUS =>
-        //> check-minus-operand
         val (dl, dr) = checkNumberOperands(expr.operator, left, right)
-        //< check-minus-operand
         dl - dr
-      //> binary-plus
       case PLUS =>
         (left, right) match
           case (dl: Double, dr: Double) => dl + dr
           case (dl: String, _) => dl + stringify(right)
           case (_, dr: String) => stringify(left) + dr
           case _ => throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.")
-      //< string-wrong-type
-      //< binary-plus
       case SLASH =>
-        //> check-slash-operand
         val (dl, dr) = checkNumberOperands(expr.operator, left, right)
-        //< check-slash-operand
         dl / dr
       case STAR =>
-        //> check-star-operand
         val (dl, dr) = checkNumberOperands(expr.operator, left, right)
-        //< check-star-operand
         dl * dr
       case _ => throw MatchError(s"${expr.operator}")
 
-  //< visit-binary
-  //> Functions visit-call
   override def visitCallExpr(expr: Expr.Call): Any =
     val callee = evaluate(expr.callee)
     val arguments = new mutable.ListBuffer[Any]()
@@ -282,39 +185,26 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
       arguments += evaluate(argument)
     }
     callee match
-      //> check-is-callable
       case function: LoxCallable =>
-        //> check-arity
         if (arguments.size ne function.arity) throw new RuntimeError(expr.paren,
           s"Expected ${function.arity} arguments but got ${arguments.size}.")
-        //< check-arity
         function.call(this, arguments.toList)
       case _ => throw new RuntimeError(expr.paren, "Can only call functions and classes.")
 
-  //< Functions visit-call
-  //> Classes interpreter-visit-get
   override def visitGetExpr(expr: Expr.Get): Any = evaluate(expr.obj) match
     case value: LoxInstance => value.get(expr.name)
     case _ => throw new RuntimeError(expr.name, "Only instances have properties.")
 
-  //< Classes interpreter-visit-get
-  //> visit-grouping
   override def visitGroupingExpr(expr: Expr.Grouping): Any = evaluate(expr.expression)
 
-  //< visit-grouping
-  //> visit-literal
   override def visitLiteralExpr(expr: Expr.Literal): Any = expr.value
 
-  //< visit-literal
-  //> Control Flow visit-logical
   override def visitLogicalExpr(expr: Expr.Logical): Any =
     val left = evaluate(expr.left)
     if (expr.operator.typ eq TokenType.OR) if (isTruthy(left)) return left
     else if (!isTruthy(left)) return left
     evaluate(expr.right)
 
-  //< Control Flow visit-logical
-  //> Classes interpreter-visit-set
   override def visitSetExpr(expr: Expr.Set): Any =
     val obj = evaluate(expr.obj)
     obj match
@@ -325,91 +215,57 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
       case _ =>
         throw new RuntimeError(expr.name, "Only instances have fields.")
 
-  //< Classes interpreter-visit-set
-  //> Inheritance interpreter-visit-super
   override def visitSuperExpr(expr: Expr.Super): Any =
     val distance = locals(expr)
-    val superclass = env.getAt(distance, "super").asInstanceOf[LoxClass]
-    //> super-find-this
-    val obj = env.getAt(distance - 1, "this").asInstanceOf[LoxInstance]
-    //< super-find-this
-    //> super-find-method
+    val superclass = env.getAt(distance, Env.SLOT_SUPER).asInstanceOf[LoxClass]
+    val obj = env.getAt(distance - 1, Env.SLOT_THIS).asInstanceOf[LoxInstance]
     val method = superclass.findMethod(expr.method.lexeme)
-    //> super-no-method
     if (method == null) throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'.")
-    //< super-no-method
     method.bind(obj)
-  //< super-find-method
 
-  //< Inheritance interpreter-visit-super
-  //> Classes interpreter-visit-this
-  override def visitThisExpr(expr: Expr.This): Any = lookUpVariable(expr.keyword, expr).get
+  override def visitThisExpr(expr: Expr.This): Any =
+    lookUpVariable(expr.keyword, expr)
 
-  //< Classes interpreter-visit-this
-  //> visit-unary
   override def visitUnaryExpr(expr: Expr.Unary): Any =
     val right = evaluate(expr.right)
     expr.operator.typ match
-      //> unary-bang
       case BANG =>
         !isTruthy(right)
-      //< unary-bang
       case MINUS =>
-        //> check-unary-operand
         checkNumberOperand(expr.operator, right)
-        //< check-unary-operand
         -right.asInstanceOf[Double]
       // Unreachable.
       case _ => null
 
-  //< visit-unary
-  //> Statements and State visit-variable
   override def visitVariableExpr(expr: Expr.Variable): Any =
     /* Statements and State visit-variable < Resolving and Binding call-look-up-variable
         return env.get(expr.name);
     */
-    //> Resolving and Binding call-look-up-variable
     lookUpVariable(expr.name, expr) match
-      case Some(Token.UNINITIATED) => throw new RuntimeError(expr.name,
+      case Token.UNINITIATED => throw new RuntimeError(expr.name,
           s"Variable '${expr.name.lexeme}' not initialized.")
-      case Some(v) => v
-      case None => throw new RuntimeError(expr.name,
-        s"Undefined variable '${expr.name.lexeme}'.")
+      case v => v
 
-  //< Resolving and Binding call-look-up-variable
-
-  //> Resolving and Binding look-up-variable
-  private def lookUpVariable(name: Token, expr: Expr): Option[Any] =
+  private def lookUpVariable(name: Token, expr: Expr): Any =
     locals.get(expr) match
-      case Some(distance) => env.getAt(distance, name.lexeme)
-      case None => globals.get(name)
+      case Some(distance) => env.getAt(distance, slots(expr))
+      case None => globals.getOrElse(name.lexeme, throw new RuntimeError(name,
+        "Undefined variable '" + name.lexeme + "'."))
 
-  //< Resolving and Binding look-up-variable
-  //< Statements and State visit-variable
-  //> check-operand
   private def checkNumberOperand(operator: Token, operand: Any): Double =
     operand match
       case d: Double => d
       case _ => throw new RuntimeError(operator, "Operand must be a number.")
 
-  //< check-operand
-  //> check-operands
   private def checkNumberOperands(operator: Token, left: Any, right: Any): (Double, Double) =
     (left, right) match
       case (dl: Double, dr: Double) => (dl, dr)
       case _ => throw new RuntimeError(operator, "Operands must be numbers.")
 
-  //< check-operands
-  //> is-truthy
   private def isTruthy(obj: Any): Boolean = obj match
     case null => false
     case bool: Boolean => bool
     case _ => true
-
-  //< is-truthy
-  //> is-equal
-  private def isEqual(a: Any, b: Any): Boolean =
-    if a == null then b == null else a.equals(b)
 
   //  override def visitCommaExpr(expr: Expr.Comma): Any =
   //    evaluate(expr.left)
@@ -427,11 +283,12 @@ class Interpreter extends Expr.Visitor[Any] with Stmt.Visitor[Any]:
 
   override def visitFunctionExpr(expr: Expr.Function): Any =
     new LoxFunction(null, expr, env, false)
-//< stringify
+
+  private def define(name: Token, value: Any): Unit =
+    if (env != null) env.define(value)
+    else globals(name.lexeme) = value
 
 object Interpreter:
-  //< is-equal
-  //> stringify
   def stringify(obj: Any): String = obj match
     case null => "nil"
     case _: Double => obj.toString.stripSuffix(".0")
