@@ -2,7 +2,7 @@ package com.craftinginterpreters.scala.lox
 
 
 import com.craftinginterpreters.scala.lox.Resolver.VariableState.{DECLARED, DEFINED}
-import com.craftinginterpreters.scala.lox.Resolver.{Variable, VariableState}
+import com.craftinginterpreters.scala.lox.Resolver.{ClassType, FunctionType, Variable, VariableState}
 import com.craftinginterpreters.scala.lox.Stmt.Block
 
 import scala.collection.mutable
@@ -15,8 +15,8 @@ object Resolver: //> function-type
     /* Resolving and Binding function-type < Classes function-type-method
         case FUNCTION
     */
-    case FUNCTION //> function-type-initializer
-    case INITIALIZER //< function-type-initializer
+    case FUNCTION
+    case INITIALIZER
     case METHOD
 
   private enum ClassType:
@@ -25,6 +25,7 @@ object Resolver: //> function-type
  */
     case CLASS
     case SUBCLASS
+    case TRAIT
 
   enum VariableState:
     case DECLARED
@@ -149,6 +150,8 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]:
   override def visitSuperExpr(expr: Expr.Super): Unit =
     if (currentClass == Resolver.ClassType.NONE)
       Lox.error(expr.keyword, "Can't use 'super' outside of a class.")
+    if (currentClass == Resolver.ClassType.TRAIT)
+      Lox.error(expr.keyword, "Can't use 'super' in a trait.")
     else if (currentClass ne Resolver.ClassType.SUBCLASS)
       Lox.error(expr.keyword, "Can't use 'super' in a class with no superclass.")
     resolveLocal(expr, expr.keyword, true)
@@ -158,6 +161,26 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]:
       Lox.error(expr.keyword, "Can't use 'this' outside of a class.")
     else
       resolveLocal(expr, expr.keyword, true)
+
+  override def visitTraitStmt(stmt: Stmt.Trait): Unit =
+    declare(stmt.name, DEFINED)
+    val enclosingClass = currentClass
+    currentClass = ClassType.TRAIT
+
+    for (tra <- stmt.traits) {
+      resolve(tra)
+    }
+
+    beginScope()
+    declare(Token.THIS, VariableState.READ)
+
+    for (method <- stmt.methods) {
+      var declaration = Resolver.FunctionType.METHOD
+      resolveFunction(method.function, declaration)
+    }
+
+    endScope()
+    currentClass = enclosingClass
 
   override def visitUnaryExpr(expr: Expr.Unary): Unit =
     resolve(expr.right)
@@ -176,7 +199,7 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]:
 
   override def visitFunctionExpr(expr: Expr.Function): Unit =
     resolveFunction(expr, Resolver.FunctionType.FUNCTION)
-  
+
   /* Resolving and Binding resolve-function < Resolving and Binding set-current-function
     private void resolveFunction(Stmt.Function function) {
   */

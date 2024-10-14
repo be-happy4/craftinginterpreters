@@ -1,7 +1,6 @@
 package com.craftinginterpreters.scala.lox
 
 
-
 import com.craftinginterpreters.scala.lox.Interpreter.stringify
 import com.craftinginterpreters.scala.lox.TokenType.*
 
@@ -83,7 +82,7 @@ class Interpreter extends Expr.Visitor[Any]:
       env = new Env(env)
       env.define(superclass)
     }
-    val methods = new mutable.HashMap[String, LoxFunction]
+    val methods = applyTraits(stmt.traits)
     for (method <- stmt.methods) {
       /* Classes interpret-methods < Classes interpreter-method-initializer
             LoxFunction function = new LoxFunction(method, env);
@@ -95,7 +94,8 @@ class Interpreter extends Expr.Visitor[Any]:
     /* Classes interpret-methods < Inheritance interpreter-construct-class
         LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
     */
-    val klass = new LoxClass(stmt.name.lexeme, superclass.asInstanceOf[LoxClass], methods.toMap)
+    val klass = new LoxClass(stmt.name.lexeme, Option(superclass.asInstanceOf[LoxClass]),
+      methods.toMap)
     if (superclass != null) env = env.enclosing
     /* Classes interpreter-visit-class < Classes interpret-methods
         LoxClass klass = new LoxClass(stmt.name.lexeme);
@@ -118,6 +118,41 @@ class Interpreter extends Expr.Visitor[Any]:
 
   override def visitReturnStmt(stmt: Stmt.Return): Unit =
     throw new Return(Option(stmt.value).map(evaluate).orNull)
+
+  override def visitTraitStmt(stmt: Stmt.Trait): Unit =
+    define(stmt.name, null)
+
+    val methods = applyTraits(stmt.traits)
+
+    for (method <- stmt.methods) {
+      methods.updateWith(method.name.lexeme) {
+        case Some(_) => throw new RuntimeError(method.name,
+            s"A previous trait declares a method named '${method.name.lexeme}'.");
+        case None => Some(LoxFunction(method.name.lexeme, method.function, env, false))
+      }
+    }
+
+    val tra = LoxTrait(stmt.name, methods.toMap)
+    assign(stmt.name, 0, tra)
+
+  private def applyTraits(traits: List[Expr]): mutable.HashMap[String, LoxFunction] =
+    val methods = mutable.HashMap[String, LoxFunction]()
+
+    for (traitExpr <- traits) {
+      evaluate(traitExpr) match
+        case tra: LoxTrait =>
+          for ((name, method) <- tra.methods) {
+            methods.updateWith(name) {
+              case Some(_) => throw new RuntimeError(tra.name,
+                  s"A previous trait declares a method named '$name'.")
+              case None => Some(method)
+            }
+          }
+        case expr: Expr.Variable =>
+          val name = expr.name
+          throw new RuntimeError(name, "'" + name.lexeme + "' is not a trait.");
+    }
+    methods
 
   override def visitVarStmt(stmt: Stmt.Var): Unit =
     var value: Any = Token.UNINITIATED
@@ -220,9 +255,9 @@ class Interpreter extends Expr.Visitor[Any]:
     val distance = locals(expr)
     val superclass = env.getAt(distance, Env.SLOT_SUPER).asInstanceOf[LoxClass]
     val obj = env.getAt(distance - 1, Env.SLOT_THIS).asInstanceOf[LoxInstance]
-    val method = superclass.findMethod(expr.method.lexeme)
-    if (method == null) throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'.")
-    method.bind(obj)
+    superclass.findMethod(expr.method.lexeme) match
+      case Some(method) => method.bind(obj)
+      case None => throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'.")
 
   override def visitThisExpr(expr: Expr.This): Any =
     lookUpVariable(expr.keyword, expr)
@@ -244,7 +279,7 @@ class Interpreter extends Expr.Visitor[Any]:
     */
     lookUpVariable(expr.name, expr) match
       case Token.UNINITIATED => throw new RuntimeError(expr.name,
-          s"Variable '${expr.name.lexeme}' not initialized.")
+        s"Variable '${expr.name.lexeme}' not initialized.")
       case v => v
 
   private def lookUpVariable(name: Token, expr: Expr): Any =

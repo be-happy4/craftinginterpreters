@@ -48,4 +48,8 @@ class LoxTest extends InterpreterTest:
     assertEquals(fromOut(run("super", "indirectly_inherited")),
       "C.foo()\nA.foo()\n")
 
+  test("test multi with"):
+    assertEquals(fromOut(run("trait", "multi_with")),
+      "a\nb1\nb2\n")
+
 

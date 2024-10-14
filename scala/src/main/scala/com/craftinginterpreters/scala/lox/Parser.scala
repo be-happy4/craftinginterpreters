@@ -52,18 +52,41 @@ class Parser(
     assignment
 
   private def declaration: Stmt = try {
-    if (matches(CLASS)) return classDeclaration
-    if (check(FUN) && checkNext(IDENTIFIER)) {
+    if (matches(CLASS))
+      classDeclaration
+    else if (matches(TRAIT))
+      traitDeclaration
+    else if (check(FUN) && checkNext(IDENTIFIER)) {
       consume(FUN, null)
-      return function("function")
-    }
-    if (matches(VAR)) return varDeclaration
-    statement
+      function("function")
+    } else if (matches(VAR)) varDeclaration
+    else statement
   } catch {
     case _: Parser.ParseError =>
       synchronize()
       null
   }
+
+  private def withClause: List[Expr] =
+    val traits = ListBuffer[Expr]()
+    if matches(WITH) then
+      while
+        consume(IDENTIFIER, "Expect trait name.")
+        traits += Expr.Variable(previous)
+        matches(COMMA)
+      do ()
+    traits.toList
+
+  private def traitDeclaration: Stmt.Trait =
+    val name = consume(IDENTIFIER, "Expect trait name.")
+    val traits = withClause
+    consume(LEFT_BRACE, "Expect '{' before trait body.")
+
+    val methods = ListBuffer[Stmt.Function]()
+    while (matches(FUN))
+      methods += function("method")
+    consume(RIGHT_BRACE, "Expect '}' after trait body")
+    Stmt.Trait(name, traits, methods.toList)
 
   private def classDeclaration: Stmt.Class =
     val name = consume(IDENTIFIER, "Expect class name.")
@@ -72,6 +95,9 @@ class Parser(
       consume(IDENTIFIER, "Expect superclass name.")
       superclass = Expr.Variable(previous)
     }
+
+    val traits = withClause
+
     consume(LEFT_BRACE, "Expect '{' before class body.")
     val methods = new ListBuffer[Stmt.Function]
     while (matches(FUN))
@@ -80,7 +106,7 @@ class Parser(
     /* Classes parse-class-declaration < Inheritance construct-class-ast
         return new Stmt.Class(name, methods);
     */
-    Stmt.Class(name, superclass, methods.toList)
+    Stmt.Class(name, superclass, traits, methods.toList)
 
   private def statement: Stmt =
     if (matches(FOR)) return forStatement
@@ -345,7 +371,7 @@ class Parser(
     if (isAtEnd) return false
     if (tokens(current + 1).typ == EOF) return false
     tokens(current + 1).typ == tokenType
-    
+
   private def advance =
     if (!isAtEnd) current += 1
     previous

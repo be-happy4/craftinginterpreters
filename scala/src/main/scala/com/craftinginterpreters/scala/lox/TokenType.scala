@@ -54,7 +54,7 @@ enum TokenType(val key: String = null):
   case TRAIT extends TokenType("trait")
   case WITH extends TokenType("with")
 
-  val isKeyword: Boolean = key(0).isLower
+  val isKeyword: Boolean = key != null && key(0).isLower
 
   
   

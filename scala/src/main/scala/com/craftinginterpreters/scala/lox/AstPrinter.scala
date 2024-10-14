@@ -141,6 +141,18 @@ class AstPrinter extends Expr.Visitor[String]:
       .stripMargin
       .replace("\n", "")
 
+  override def visitTraitStmt(stmt: Stmt.Trait): String =
+    val builder = new StringBuilder
+    builder.append("(trait " + stmt.name.lexeme)
+    for (tra <- stmt.traits) {
+      builder.append(" " + print(tra))
+    }
+    for (method <- stmt.methods) {
+      builder.append(" " + print(method))
+    }
+    builder.append(")")
+    builder.toString
+
 object AstPrinter:
   def main(args: Array[String]): Unit =
     val bytes = Files.readAllBytes(Paths.get("test/while/break.lox"))

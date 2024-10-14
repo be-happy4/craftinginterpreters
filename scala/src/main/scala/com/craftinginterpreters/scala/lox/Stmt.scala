@@ -7,37 +7,42 @@ sealed abstract class Stmt:
   def accept[R](visitor: Stmt.Visitor[R]): R =
     this match
       case x: Stmt.Block => visitor.visitBlockStmt(x)
+      case x: Stmt.Break.type => visitor.visitBreakStmt(x)
       case x: Stmt.Class => visitor.visitClassStmt(x)
+      case x: Stmt.Empty.type => visitor.visitEmptyStmt(x)
       case x: Expr => visitor.visitExprStmt(x)
       case x: Stmt.Function => visitor.visitFunctionStmt(x)
       case x: Stmt.If => visitor.visitIfStmt(x)
       case x: Stmt.Print => visitor.visitPrintStmt(x)
       case x: Stmt.Return => visitor.visitReturnStmt(x)
+      case x: Stmt.Trait => visitor.visitTraitStmt(x)
       case x: Stmt.Var => visitor.visitVarStmt(x)
       case x: Stmt.While => visitor.visitWhileStmt(x)
-      case x: Stmt.Break.type => visitor.visitBreakStmt(x)
-      case x: Stmt.Empty.type => visitor.visitEmptyStmt(x)
 
 object Stmt:
   trait Visitor[R]:
     def visitBlockStmt(stmt: Stmt.Block): R
+    def visitBreakStmt(stmt: Stmt.Break.type): R
     def visitClassStmt(stmt: Stmt.Class): R
+    def visitEmptyStmt(stmt: Stmt.Empty.type): R
     def visitExprStmt(stmt: Expr): R
     def visitFunctionStmt(stmt: Stmt.Function): R
     def visitIfStmt(stmt: Stmt.If): R
     def visitPrintStmt(stmt: Stmt.Print): R
     def visitReturnStmt(stmt: Stmt.Return): R
+    def visitTraitStmt(stmt: Stmt.Trait): R
     def visitVarStmt(stmt: Stmt.Var): R
     def visitWhileStmt(stmt: Stmt.While): R
-    def visitBreakStmt(stmt: Stmt.Break.type): R
-    def visitEmptyStmt(stmt: Stmt.Empty.type): R
 
 // Nested Stmt classes here...
   case class Block(statements: List[Stmt]) extends Stmt
+  object Break extends Stmt
   case class Class(
     name: Token,
     superclass: Expr.Variable,
+    traits: List[Expr],
     methods: List[Stmt.Function]) extends Stmt
+  object Empty extends Stmt
 //  case class Expression(val expression: Expr) extends Stmt
   case class Function(name: Token, function: Expr.Function) extends Stmt
   case class If(
@@ -46,10 +51,12 @@ object Stmt:
     elseBranch: Stmt) extends Stmt
   case class Print(expression: Expr) extends Stmt
   case class Return(keyword: Token, value: Expr) extends Stmt
+  case class Trait(
+    name: Token,
+    traits: List[Expr],
+    methods: List[Stmt.Function]) extends Stmt
   case class Var(name: Token, initializer: Expr) extends Stmt
   case class While(condition: Expr, body: Stmt) extends Stmt
-  object Break extends Stmt
-  object Empty extends Stmt
 
 
 sealed abstract class Expr extends Stmt:

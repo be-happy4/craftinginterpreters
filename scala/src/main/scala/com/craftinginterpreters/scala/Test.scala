@@ -3,8 +3,10 @@ package com.craftinginterpreters.scala
 object Test:
 
   def main(args: Array[String]): Unit =
-    val x = 1 -> 2 -> 3
-    println(x._1)
+    val a = Some(1).collect {
+      case 1 => null
+    }
+    println(a)
 
 
   class A private():
