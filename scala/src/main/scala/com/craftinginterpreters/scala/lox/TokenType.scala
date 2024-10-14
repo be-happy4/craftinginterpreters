@@ -4,9 +4,7 @@ package com.craftinginterpreters.scala.lox
  * @see [[com.sun.tools.javac.parser.Tokens.TokenKind]]
  * @see [[com.sun.tools.javac.parser.Tokens.Token.Tag]]
  */
-enum TokenType(val key: String):
-  def this() =
-    this(null)
+enum TokenType(val key: String = null):
   case EOF
   // Single-character tokens.
   case LEFT_PAREN extends TokenType("(")
@@ -53,6 +51,10 @@ enum TokenType(val key: String):
   case VAR extends TokenType("var")
   case WHILE extends TokenType("while")
   case BREAK extends TokenType("break")
+  case TRAIT extends TokenType("trait")
+  case WITH extends TokenType("with")
+
+  val isKeyword: Boolean = key(0).isLower
 
   
   

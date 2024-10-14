@@ -42,4 +42,10 @@ class LoxTest extends InterpreterTest:
     assertEquals(fromOut(run("class", "person")),
       "Jane\n")
 
+  test("test super"):
+    assertEquals(fromOut(run("super", "super_in_inherited_method")),
+      "A\n")
+    assertEquals(fromOut(run("super", "indirectly_inherited")),
+      "C.foo()\nA.foo()\n")
+
 

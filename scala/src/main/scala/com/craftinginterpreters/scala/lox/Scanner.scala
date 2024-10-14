@@ -1,5 +1,4 @@
 
-//> Scanning scanner-class
 package com.craftinginterpreters.scala.lox
 
 import com.craftinginterpreters.scala.lox.TokenType.*
@@ -10,26 +9,10 @@ import scala.collection.mutable.ListBuffer
 
 
 object Scanner:
-  //> keyword-map
-  private val keywords: Map[String, TokenType] = Map.apply(
-    "and" -> AND,
-    "class" -> CLASS,
-    "else" -> ELSE,
-    "false" -> FALSE,
-    "for" -> FOR,
-    "fun" -> FUN,
-    "if" -> IF,
-    "nil" -> NIL,
-    "or" -> OR,
-    "print" -> PRINT,
-    "return" -> RETURN,
-    "super" -> SUPER,
-    "this" -> THIS,
-    "true" -> TRUE,
-    "var" -> VAR,
-    "while" -> WHILE,
-    "break" -> BREAK,
-  )
+  private val keywords: Map[String, TokenType] = TokenType.values
+    .filter(_.isKeyword)
+    .map(token => token.key -> token)
+    .toMap
 
   def apply(source: String): Scanner =
     new Scanner(source)
@@ -38,14 +21,12 @@ object Scanner:
     new Scanner(String(java.nio.file.Files.readAllBytes(path)))
 
 
-class Scanner(private val source: String): //< scan-state
+class Scanner(private val source: String):
   final private val tokens = new ListBuffer[Token]
-  //> scan-state
   private var start = 0
   private var current = 0
   private var line = 1
 
-  //> scan-tokens
   def scanTokens: List[Token] = {
     while (!isAtEnd) {
       // We are at the beginning of the next lexeme.
@@ -56,8 +37,6 @@ class Scanner(private val source: String): //< scan-state
     tokens.toList
   }
 
-  //< scan-tokens
-  //> scan-token
   private def scanToken(): Unit = {
     val c = advance
     c match {
@@ -75,7 +54,6 @@ class Scanner(private val source: String): //< scan-state
       case ':' => addToken(COLON)
       // [slash]
 
-      //> two-char-tokens
       case '!' => addToken(if (matches('=')) BANG_EQUAL
       else BANG)
       case '=' => addToken(if (matches('=')) EQUAL_EQUAL
@@ -85,8 +63,6 @@ class Scanner(private val source: String): //< scan-state
       case '>' => addToken(if (matches('=')) GREATER_EQUAL
       else GREATER)
 
-      //< two-char-tokens
-      //> slash
       case '/' =>
         if (matches('/')) {
           // A comment goes until the end of the line.
@@ -105,8 +81,6 @@ class Scanner(private val source: String): //< scan-state
           }
         } else addToken(SLASH)
 
-      //< slash
-      //> whitespace
       case ' ' =>
       case '\r' =>
       case '\t' =>
@@ -114,44 +88,31 @@ class Scanner(private val source: String): //< scan-state
       case '\n' =>
         line += 1
 
-      //< whitespace
-      //> string-start
       case '"' =>
         string()
 
-      //< string-start
-      //> char-error
       case _ =>
         /* Scanning char-error < Scanning digit-start
                 Lox.error(line, "Unexpected character.");
         */
-        //> digit-start
         if (isDigit(c)) number()
         else if (isAlpha(c)) identifier()
         else Lox.error(line, "Unexpected character.")
-      //< digit-start
 
-      //< char-error
     }
   }
 
-  //< scan-token
-  //> identifier
   private def identifier(): Unit = {
     while (isAlphaNumeric(peek)) advance
     /* Scanning identifier < Scanning keyword-type
         addToken(IDENTIFIER);
     */
-    //> keyword-type
     val text = source.substring(start, current)
     var typ = Scanner.keywords.getOrElse(text, null)
     if (typ == null) typ = IDENTIFIER
     addToken(typ)
-    //< keyword-type
   }
 
-  //< identifier
-  //> number
   private def number(): Unit = {
     while (isDigit(peek)) advance
     // Look for a fractional part.
@@ -163,8 +124,6 @@ class Scanner(private val source: String): //< scan-state
     addToken(NUMBER, source.substring(start, current).toDouble)
   }
 
-  //< number
-  //> string
   private def string(): Unit = {
     while (peek != '"' && !isAtEnd) {
       if (peek == '\n') line += 1
@@ -181,8 +140,6 @@ class Scanner(private val source: String): //< scan-state
     addToken(STRING, value)
   }
 
-  //< string
-  //> match
   private def matches(expected: Char): Boolean = {
     if (isAtEnd) return false
     if (source(current) != expected) return false
@@ -190,36 +147,24 @@ class Scanner(private val source: String): //< scan-state
     true
   }
 
-  //< match
-  //> peek
   private def peek: Char = {
     if (isAtEnd) return '\u0000'
     source(current)
   }
 
-  //< peek
-  //> peek-next
   private def peekNext: Char = {
     if (current + 1 >= source.length) return '\u0000'
     source(current + 1)
   } // [peek-next]
 
-  //< peek-next
-  //> is-alpha
   private def isAlpha(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
 
   private def isAlphaNumeric(c: Char) = isAlpha(c) || isDigit(c)
 
-  //< is-alpha
-  //> is-digit
   private def isDigit(c: Char) = c >= '0' && c <= '9' // [is-digit]
 
-  //< is-digit
-  //> is-at-end
   private def isAtEnd = current >= source.length
 
-  //< is-at-end
-  //> advance-and-add-token
   private def advance = source({
     current += 1;
     current - 1
@@ -233,6 +178,5 @@ class Scanner(private val source: String): //< scan-state
     val text = source.substring(start, current)
     tokens += new Token(typ, text, literal, line)
   }
-//< advance-and-add-token
 
 

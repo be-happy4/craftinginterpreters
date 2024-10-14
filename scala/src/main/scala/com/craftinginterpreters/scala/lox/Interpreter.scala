@@ -88,7 +88,8 @@ class Interpreter extends Expr.Visitor[Any]:
       /* Classes interpret-methods < Classes interpreter-method-initializer
             LoxFunction function = new LoxFunction(method, env);
       */
-      val function = new LoxFunction(method.name.lexeme, method.function, env, method.name.lexeme.equals("init"))
+      val function = new LoxFunction(method.name.lexeme, method.function, env,
+        method.name.lexeme.equals(TokenType.THIS.key))
       methods(method.name.lexeme) = function
     }
     /* Classes interpret-methods < Inheritance interpreter-construct-class

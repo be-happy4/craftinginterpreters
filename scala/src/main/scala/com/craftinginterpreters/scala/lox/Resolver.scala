@@ -71,7 +71,7 @@ class Resolver(private val interpreter: Interpreter) extends Expr.Visitor[Unit]:
     declare(Token.THIS, VariableState.READ)
     for (method <- stmt.methods) {
       var declaration = Resolver.FunctionType.METHOD
-      if (method.name.lexeme.equals("init")) declaration = Resolver.FunctionType.INITIALIZER
+      if (method.name.lexeme.equals(TokenType.THIS.key)) declaration = Resolver.FunctionType.INITIALIZER
       resolveFunction(method.function, declaration) // [local]
     }
     endScope()

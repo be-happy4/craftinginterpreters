@@ -16,7 +16,7 @@ class LoxClass(
 
   override def call(interpreter: Interpreter, arguments: List[Any]): Any =
     val instance = new LoxInstance(this)
-    val initializer = findMethod("init")
+    val initializer = findMethod(TokenType.THIS.key)
     if (initializer != null) initializer.bind(instance).call(interpreter, arguments)
     instance
 
@@ -24,7 +24,7 @@ class LoxClass(
     /* Classes lox-class-call-arity < Classes lox-initializer-arity
         return 0;
     */
-    val initializer = findMethod("init")
+    val initializer = findMethod(TokenType.THIS.key)
     if (initializer == null) 0
     else initializer.arity
 
