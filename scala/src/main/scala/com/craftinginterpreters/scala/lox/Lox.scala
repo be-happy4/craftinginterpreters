@@ -29,7 +29,7 @@ object Lox:
 
   //> run-file
   @throws[IOException]
-  private def runFile(path: String): Unit =
+  def runFile(path: String): Unit =
     val bytes = Files.readAllBytes(Paths.get(path))
     run(new String(bytes, Charset.defaultCharset))
     //> exit-code
@@ -64,7 +64,7 @@ object Lox:
 
   //< prompt
   //> run
-  private def run(source: String): List[Any] =
+  def run(source: String): List[Any] =
     val scanner = new Scanner(source)
     val tokens = scanner.scanTokens
     /* Scanning run < Parsing Expressions print-ast
