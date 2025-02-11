@@ -1,26 +1,17 @@
 package com.craftinginterpreters.scala
 
-import com.craftinginterpreters.scala.lox.Lox
-
-import java.time.{Duration, LocalDateTime}
+import java.time.Duration
 
 object Test:
-
+//  def fact(0: Int): Int = 1
+  def fact(n: Int): Int = n match
+    case 0 => 1
+    case _ => n * fact(n - 1)
   def main(args: Array[String]): Unit =
-    println(LocalDateTime.now())
-    val startTime = System.nanoTime()
-    Lox.run("""
-      |fun fib(n) {
-      |  if (n < 2) return n;
-      |  return fib(n - 1) + fib(n - 2);
-      |}
-      |
-      |var before = clock();
-      |print fib(40);
-      |var after = clock();
-      |print after - before;""".stripMargin)
-    val endTime = System.nanoTime()
-    println(Duration.ofNanos(endTime - startTime))
+    val halfMarathonDistance = 21.0975
+    val expectedTime = Duration.ofHours(2).plusMinutes(45)
+
+
 
 
   class A private():
@@ -28,6 +19,13 @@ object Test:
       this()
       println(super.clone())
   object A
+
+extension[T](l: List[T])
+  def take2(n: Int): List[T] = (n, l) match
+    case (0, _) => Nil
+    case (_, Nil) => Nil
+    case (_, x :: xs) => x :: xs.take(n - 1)
+
 
 def buildString(builder: => StringBuilder = new StringBuilder())
   (f: StringBuilder ?=> Unit): String =

@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.30)
-project(craftinginterpreters .)
+project(craftinginterpreters)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_C_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 include_directories(.)
 
@@ -25,4 +28,5 @@ add_executable(craftinginterpreters
         value.c
         value.h
         vm.c
-        vm.h)
+        vm.h
+        wtf.cpp)

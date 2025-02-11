@@ -6,6 +6,10 @@ import java.lang.classfile.Opcode
 import scala.collection.mutable.ListBuffer
 
 /**
+ * {{{
+ *
+ *
+ * }}}
  * @see [[Opcode]]
  */
 class Chunk(
